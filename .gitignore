@@ -1,0 +1,33 @@
+# --- Environnements ---
+.venv/
+**/node_modules/
+__pycache__/
+*.pyc
+
+# --- Contenus sous copyright (non versionnés) ---
+refs/
+samples/
+out/**/stems/
+out/**/samples/
+
+# --- Audio (copyright / volumineux) ---
+*.wav
+*.WAV
+*.mp3
+*.MP3
+*.flac
+*.aiff
+*.aif
+*.ogg
+*.m4a
+
+# --- MIDI (transcriptions de morceaux sous copyright) ---
+*.mid
+*.midi
+
+# --- Logs / divers ---
+*.log
+/extract_samples.py
+
+# --- Claude Code ---
+.claude/settings.local.json

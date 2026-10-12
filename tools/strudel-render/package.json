@@ -1,0 +1,11 @@
+{
+  "name": "strudel-render",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Offline Strudel code -> WAV renderer (headless Edge/Chrome + @strudel/web renderPatternAudio)",
+  "type": "module",
+  "dependencies": {
+    "@strudel/web": "1.3.0",
+    "playwright-core": "1.64.0"
+  }
+}

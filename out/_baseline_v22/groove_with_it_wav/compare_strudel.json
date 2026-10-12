@@ -1,0 +1,179 @@
+{
+ "samples": {
+  "version": "samples",
+  "cps": 0.5124958333333333,
+  "bars": 34,
+  "render_first_kick_onset_ms": 0.79,
+  "orig_kick_vs_grid_median_ms": 5.03,
+  "render_kick_vs_cycle_grid_median_ms": -0.97,
+  "alignment_mode": "constant tempo from kick fit: 122.999 BPM (code 122.999), render stretched x1.00000",
+  "orig_kick_tempo_fit": {
+   "bpm": 122.9986,
+   "residual_std_ms": 1.5
+  },
+  "applied_offset_ms": -1796.59,
+  "block_shifts_ms": null,
+  "kick_offset_ms": {
+   "median": 0.23,
+   "median_abs": 0.68,
+   "p90_abs": 2.93,
+   "n": 121
+  },
+  "rms_gain_applied_db": 2.98,
+  "rms_diff_db_per_block": [
+   -0.1,
+   0.29,
+   -0.11,
+   -0.07
+  ],
+  "spectral_profile_corr_all": 0.986,
+  "blocks": [
+   {
+    "bars": [
+     4,
+     8
+    ],
+    "rms_diff_db": -0.1,
+    "kick_offset_ms_median": -0.17,
+    "spectral_profile_corr": 0.954
+   },
+   {
+    "bars": [
+     12,
+     16
+    ],
+    "rms_diff_db": 0.29,
+    "kick_offset_ms_median": 0.35,
+    "spectral_profile_corr": 0.988
+   },
+   {
+    "bars": [
+     20,
+     24
+    ],
+    "rms_diff_db": -0.11,
+    "kick_offset_ms_median": 0.5,
+    "spectral_profile_corr": 0.977
+   },
+   {
+    "bars": [
+     28,
+     32
+    ],
+    "rms_diff_db": -0.07,
+    "kick_offset_ms_median": 0.25,
+    "spectral_profile_corr": 0.984
+   }
+  ],
+  "level_gap_db": 1.71,
+  "tf_logmel_corr": 0.81,
+  "before_loops": {
+   "level_gap_db": 1.9,
+   "rms_diff_db_per_block": [
+    -0.01,
+    0.29,
+    -0.12,
+    -0.15
+   ],
+   "spectral_profile_corr_all": 0.948,
+   "tf_logmel_corr": 0.639
+  },
+  "vox_alignment": {
+   "offset_ms": 2.86,
+   "peak_corr": 0.207,
+   "corr_at_0": 0.05,
+   "envelope_offset_ms": 2.74,
+   "envelope_corr": 0.494
+  },
+  "other_alignment": {
+   "offset_ms": 10.54,
+   "peak_corr": 0.095,
+   "corr_at_0": 0.006,
+   "envelope_offset_ms": 1.97,
+   "envelope_corr": 0.62
+  },
+  "render": {
+   "cps": 0.5124958333333333,
+   "raw_peak": 1.030398964881897,
+   "scale": 0.8637431037229455,
+   "render_ms": 41685,
+   "seconds": 66.34200278051043
+  }
+ },
+ "synth": {
+  "version": "synth",
+  "cps": 0.5124958333333333,
+  "bars": 34,
+  "render_first_kick_onset_ms": 16.49,
+  "orig_kick_vs_grid_median_ms": 5.03,
+  "render_kick_vs_cycle_grid_median_ms": 16.48,
+  "alignment_mode": "constant tempo from kick fit: 122.999 BPM (code 122.999), render stretched x1.00000",
+  "orig_kick_tempo_fit": {
+   "bpm": 122.9986,
+   "residual_std_ms": 1.5
+  },
+  "applied_offset_ms": -1814.04,
+  "block_shifts_ms": null,
+  "kick_offset_ms": {
+   "median": 0.91,
+   "median_abs": 1.22,
+   "p90_abs": 2.34,
+   "n": 121
+  },
+  "rms_gain_applied_db": 7.13,
+  "rms_diff_db_per_block": [
+   -0.01,
+   0.29,
+   -0.12,
+   -0.15
+  ],
+  "spectral_profile_corr_all": 0.892,
+  "blocks": [
+   {
+    "bars": [
+     4,
+     8
+    ],
+    "rms_diff_db": -0.01,
+    "kick_offset_ms_median": 0.63,
+    "spectral_profile_corr": 0.89
+   },
+   {
+    "bars": [
+     12,
+     16
+    ],
+    "rms_diff_db": 0.29,
+    "kick_offset_ms_median": 1.07,
+    "spectral_profile_corr": 0.891
+   },
+   {
+    "bars": [
+     20,
+     24
+    ],
+    "rms_diff_db": -0.12,
+    "kick_offset_ms_median": 1.19,
+    "spectral_profile_corr": 0.888
+   },
+   {
+    "bars": [
+     28,
+     32
+    ],
+    "rms_diff_db": -0.15,
+    "kick_offset_ms_median": 0.79,
+    "spectral_profile_corr": 0.898
+   }
+  ],
+  "level_gap_db": 2.73,
+  "tf_logmel_corr": 0.719,
+  "render": {
+   "cps": 0.5124958333333333,
+   "raw_peak": 1.476919412612915,
+   "scale": 0.6026056617574297,
+   "render_ms": 45176,
+   "seconds": 66.34200278051043
+  }
+ }
+}

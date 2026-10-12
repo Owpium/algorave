@@ -1,0 +1,40 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><link rel="icon" href="data:,"><title>strudel offline render</title></head>
+<body>
+<script type="module">
+import * as S from '/strudel/index.mjs';
+window.S = S;
+// renderPatternAudio writes 16-bit PCM and clamps at 1.0: normalise the rendered
+// buffer in place (peak -> 0.89) before it is encoded, and report the factor.
+window.renderInfo = {};
+const _sr = OfflineAudioContext.prototype.startRendering;
+OfflineAudioContext.prototype.startRendering = function () {
+  return _sr.call(this).then((buf) => {
+    let peak = 0;
+    for (let c = 0; c < buf.numberOfChannels; c++) {
+      const d = buf.getChannelData(c);
+      for (let i = 0; i < d.length; i++) { const a = Math.abs(d[i]); if (a > peak) peak = a; }
+    }
+    const k = peak > 0 ? 0.89 / peak : 1;
+    for (let c = 0; c < buf.numberOfChannels; c++) {
+      const d = buf.getChannelData(c);
+      for (let i = 0; i < d.length; i++) d[i] *= k;
+    }
+    window.renderInfo = { raw_peak: peak, scale: k, length: buf.length };
+    return buf;
+  });
+};
+window.renderCode = async (code, cycles, begin, prebakeUrls, name) => {
+  const repl = await S.initStrudel({});
+  for (const u of prebakeUrls) await S.samples(u);
+  // samples('...') calls inside the code are awaited here too (the REPL loads them lazily)
+  for (const m of code.matchAll(/samples\(\s*['"]([^'"]+)['"]\s*\)/g)) await S.samples(m[1]);
+  const pat = await repl.evaluate(code, false);
+  if (!pat) throw new Error('evaluate returned no pattern');
+  const cps = repl.scheduler.cps;
+  await S.renderPatternAudio(pat, cps, begin, begin + cycles, 44100, 1024, false, name);
+  return { cps, ...window.renderInfo };
+};
+window.ready = true;
+</script>
+</body></html>
