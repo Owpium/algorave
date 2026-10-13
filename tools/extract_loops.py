@@ -21,7 +21,7 @@ Per lane:
      cluster, then other distinct phrases (max 4). Sequence of variants over the excerpt -> code.
   4. chops (vocals): onset-segmented hits inside variant 0 -> voxchop/N.wav (+ their 16th position).
 """
-import argparse, json, sys
+import argparse, json, os, sys
 from pathlib import Path
 
 import numpy as np
@@ -115,14 +115,15 @@ def cos(a, b):
     return float(np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b) + 1e-12))
 
 
-def activity(stem, mix, t0, bar_s, nbars, kind):
+def activity(stem, mix, t0, bar_s, nbars, kind, min_rel=None):
     """bar RMS (dBFS) of stem / mix; active = loud enough vs the mix (not Demucs bleed) and vs the
     stem's own loud bars."""
     rs = np.array([db(np.sqrt(np.mean(seg(stem, t0 + b * bar_s, bar_s) ** 2)) + 1e-12) for b in range(nbars)])
     rm = np.array([db(np.sqrt(np.mean(seg(mix, t0 + b * bar_s, bar_s) ** 2)) + 1e-12) for b in range(nbars)])
     rel = rs - rm
     top = np.percentile(rs, 90)
-    min_rel = -24.0 if kind == "vox" else -26.0     # Demucs bleed is ~ -35..-60 dB
+    if min_rel is None:
+        min_rel = -24.0 if kind == "vox" else -26.0     # Demucs bleed is ~ -35..-60 dB
     act = (rel > min_rel) & (rs > top - 15)
     return act, rs, rm, rel
 
@@ -240,9 +241,13 @@ def loop_lane(out, an, kind, max_variants=4, write_dir=None, want_chops=False, d
     stem_name, stem, mix, t0, bar_s, nbars, bar_off = load_src(out, an, kind, full_dir)
     # only bars fully inside the audio
     full = [b for b in range(nbars) if t0 + b * bar_s >= -1e-3 and t0 + (b + 1) * bar_s <= len(mix) / SR + 1e-3]
-    act, rs, rm, rel = activity(stem, mix, t0, bar_s, nbars, kind)
+    # v2.4: a quiet 'other' part (-26..-36 dB under the mix) is real when basic-pitch found a consistent pitched loop
+    # in it (track2strudel emits the lead): Contradiction's c/d#/g stab sits at -33 dB and was dropped as bleed
+    lead = an.get("lanes", {}).get("lead", {})
+    quiet_ok = kind == "other" and full_dir is None and lead.get("emit") and lead.get("pitch_conf", 0) >= 0.8
+    act, rs, rm, rel = activity(stem, mix, t0, bar_s, nbars, kind, -36.0 if quiet_ok else None)
     act = act & np.isin(np.arange(nbars), full)
-    info = dict(stem=stem_name, source="full track" if full_dir else "excerpt", bar_offset=bar_off,
+    info = dict(stem=stem_name, source="full track" if full_dir else "excerpt", bar_offset=bar_off, quiet_threshold=bool(quiet_ok),
                 bar_s=bar_s, downbeat0=t0, n_active=int(act.sum()), n_bars=len(full),
                 bar_rms_db=[round(float(v), 1) for v in rs], rel_to_mix_db=[round(float(v), 1) for v in rel],
                 active=act.astype(int).tolist(),

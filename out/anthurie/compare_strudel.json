@@ -19,23 +19,23 @@
    "p90_abs": 0.77,
    "n": 121
   },
-  "rms_gain_applied_db": 5.24,
+  "rms_gain_applied_db": 5.16,
   "rms_diff_db_per_block": [
-   -0.28,
+   -0.27,
    -0.23,
    0.2,
-   0.26
+   0.25
   ],
-  "spectral_profile_corr_all": 0.993,
+  "spectral_profile_corr_all": 0.988,
   "blocks": [
    {
     "bars": [
      4,
      8
     ],
-    "rms_diff_db": -0.28,
+    "rms_diff_db": -0.27,
     "kick_offset_ms_median": 0.24,
-    "spectral_profile_corr": 0.991
+    "spectral_profile_corr": 0.986
    },
    {
     "bars": [
@@ -44,7 +44,7 @@
     ],
     "rms_diff_db": -0.23,
     "kick_offset_ms_median": 0.14,
-    "spectral_profile_corr": 0.991
+    "spectral_profile_corr": 0.985
    },
    {
     "bars": [
@@ -52,31 +52,64 @@
      24
     ],
     "rms_diff_db": 0.2,
-    "kick_offset_ms_median": 0.08,
-    "spectral_profile_corr": 0.993
+    "kick_offset_ms_median": 0.09,
+    "spectral_profile_corr": 0.984
    },
    {
     "bars": [
      28,
      32
     ],
-    "rms_diff_db": 0.26,
+    "rms_diff_db": 0.25,
     "kick_offset_ms_median": 0.29,
-    "spectral_profile_corr": 0.992
+    "spectral_profile_corr": 0.987
    }
   ],
-  "level_gap_db": 0.52,
-  "tf_logmel_corr": 0.856,
+  "level_gap_db": -0.23,
+  "tf_logmel_corr": 0.863,
+  "band_gap_db": {
+   "le150": -0.37,
+   "150_4k": 1.73,
+   "gt4k": 0.33
+  },
+  "per_bar_level_corr": {
+   "all": {
+    "r": 0.923,
+    "mae_db": 0.26,
+    "range_orig_db": 3.1
+   },
+   "le150": {
+    "r": 0.897,
+    "mae_db": 0.36,
+    "range_orig_db": 2.8
+   },
+   "150_4k": {
+    "r": 0.796,
+    "mae_db": 0.42,
+    "range_orig_db": 6.5
+   },
+   "gt4k": {
+    "r": 0.718,
+    "mae_db": 1.02,
+    "range_orig_db": 4.1
+   }
+  },
+  "tf_logmel_corr_all_bars": 0.852,
+  "band_gap_abs_db": {
+   "le150": -0.14,
+   "150_4k": 1.96,
+   "gt4k": 0.56
+  },
   "before_loops": {
-   "level_gap_db": 0.37,
+   "level_gap_db": -0.37,
    "rms_diff_db_per_block": [
-    -0.44,
+    -0.43,
     -0.01,
     0.21,
     0.2
    ],
-   "spectral_profile_corr_all": 0.985,
-   "tf_logmel_corr": 0.783
+   "spectral_profile_corr_all": 0.979,
+   "tf_logmel_corr": 0.791
   },
   "vox_alignment": {
    "offset_ms": 0.32,
@@ -92,11 +125,49 @@
    "envelope_offset_ms": 0.43,
    "envelope_corr": 0.806
   },
+  "groups": {
+   "drums": {
+    "gap_db": {
+     "all": 0.7,
+     "le150": 0.57,
+     "150_4k": 1.24,
+     "gt4k": 1.74
+    },
+    "tf_logmel_corr": 0.833
+   },
+   "bass": {
+    "gap_db": {
+     "all": 0.33,
+     "le150": -0.57,
+     "150_4k": 6.32,
+     "gt4k": -10.87
+    },
+    "tf_logmel_corr": 0.553
+   },
+   "other": {
+    "gap_db": {
+     "all": 0.81,
+     "le150": 0.86,
+     "150_4k": 0.84,
+     "gt4k": -6.59
+    },
+    "tf_logmel_corr": 0.942
+   },
+   "vox": {
+    "gap_db": {
+     "all": 0.35,
+     "le150": -13.81,
+     "150_4k": 0.37,
+     "gt4k": -20.68
+    },
+    "tf_logmel_corr": 0.535
+   }
+  },
   "render": {
    "cps": 0.5208333333333334,
-   "raw_peak": 1.5330567359924316,
-   "scale": 0.5805395058806184,
-   "render_ms": 9543,
+   "raw_peak": 1.6556968688964844,
+   "scale": 0.5375380099578141,
+   "render_ms": 8889,
    "seconds": 63.35999999999999
   }
  },
@@ -168,11 +239,55 @@
   ],
   "level_gap_db": 3.66,
   "tf_logmel_corr": 0.707,
+  "band_gap_db": {
+   "le150": -2.64,
+   "150_4k": 5.52,
+   "gt4k": 4.39
+  },
+  "per_bar_level_corr": {
+   "all": {
+    "r": 0.879,
+    "mae_db": 0.61,
+    "range_orig_db": 3.1
+   },
+   "le150": {
+    "r": 0.887,
+    "mae_db": 0.79,
+    "range_orig_db": 2.8
+   },
+   "150_4k": {
+    "r": 0.495,
+    "mae_db": 0.83,
+    "range_orig_db": 6.5
+   },
+   "gt4k": {
+    "r": 0.873,
+    "mae_db": 0.8,
+    "range_orig_db": 4.1
+   }
+  },
+  "tf_logmel_corr_all_bars": 0.718,
+  "band_gap_abs_db": {
+   "le150": -6.3,
+   "150_4k": 1.86,
+   "gt4k": 0.73
+  },
+  "groups": {
+   "other": {
+    "gap_db": {
+     "all": 7.07,
+     "le150": 22.09,
+     "150_4k": 3.98,
+     "gt4k": -9.74
+    },
+    "tf_logmel_corr": 0.712
+   }
+  },
   "render": {
    "cps": 0.5208333333333334,
-   "raw_peak": 1.5556294918060303,
-   "scale": 0.5721156642297529,
-   "render_ms": 16558,
+   "raw_peak": 1.5556296110153198,
+   "scale": 0.5721156203880174,
+   "render_ms": 14163,
    "seconds": 63.35999999999999
   }
  }

@@ -98,6 +98,30 @@ def before_loops(code):
     return "\n".join(out) + "\n"
 
 
+GROUP_STEM = {"drums": "drums", "bass": "bass", "other": "other", "vox": "vocals"}
+
+
+def lane_group(block):
+    """stem group of a `$:` block from its sample names (prefix_lane): drums / bass / other / vox."""
+    m = re.findall(r'[a-z]+_([a-z]+)', " ".join(re.findall(r'"([^"]*)"', block)))
+    for lane in m:
+        if lane in ("kick", "hh", "oh", "clap", "perc", "ride", "drumloop", "top"):
+            return "drums"
+        if lane.startswith("bass") or lane in ("low", "rumble", "sub"):
+            return "bass"
+        if lane in ("lead", "other", "otherloop"):
+            return "other"
+        if lane.startswith("vox"):
+            return "vox"
+    if block.startswith("$: note("):
+        return "bass" if "_bass" in block else "other"
+    return None
+
+
+def group_code(code, grp):
+    return keep_blocks(code, lambda b: lane_group(b) == grp)
+
+
 def has_loop(code, name):
     return any(ln.startswith("$:") and re.search(rf'[a-z]+_{name}"\)', ln) for ln in code.splitlines())
 
@@ -164,7 +188,38 @@ def xcorr_offset(orig, rend, sel, max_ms=60):
                 envelope_corr=round(float(ce[ke] / (np.linalg.norm(ea) * np.linalg.norm(eb) + 1e-12)), 3))
 
 
-def build_compare(out, an, grid, bar0, rend, rend_drums, tag, cps, scale=1.0, extras=None):
+BANDS = (("le150", None, 150), ("150_4k", 150, 4000), ("gt4k", 4000, None))
+
+
+def bandx(x, lo, hi):
+    if hi is None:
+        return sosfiltfilt(butter(4, lo, "highpass", fs=SR, output="sos"), x)
+    return band(x, lo, hi)
+
+
+def band_metrics(o, p, sel, bar_t, nbars):
+    """v2.4: level gap per band on the rendered blocks (dB, render - original, after the global RMS match;
+    < 0 = missing in the render) + per-bar level correlation over the whole excerpt (all bars are rendered),
+    for the full band and per band (does the automation follow the original?)."""
+    res = {"band_gap_db": {}, "per_bar_level_corr": {}}
+    edges = [(int(max(0, bar_t[b]) * SR), int(min(len(o) / SR, bar_t[b + 1]) * SR)) for b in range(nbars)]
+    edges = [(a, z) for a, z in edges if z - a > SR * 0.5]
+    for name, lo, hi in (("all", None, None),) + BANDS:
+        bo, bp = (o, p) if name == "all" else (bandx(o, lo, hi), bandx(p, lo, hi))
+        if name != "all":
+            res["band_gap_db"][name] = round(float(20 * np.log10(np.sqrt(np.mean(bp[sel] ** 2)) / np.sqrt(np.mean(bo[sel] ** 2)))), 2)
+        lo_db = np.array([20 * np.log10(np.sqrt(np.mean(bo[a:z] ** 2)) + 1e-9) for a, z in edges])
+        lp_db = np.array([20 * np.log10(np.sqrt(np.mean(bp[a:z] ** 2)) + 1e-9) for a, z in edges])
+        r = float(np.corrcoef(lo_db, lp_db)[0, 1]) if lo_db.std() > 0.05 and lp_db.std() > 0.05 else float("nan")
+        res["per_bar_level_corr"][name] = dict(r=round(r, 3) if np.isfinite(r) else None,
+                                               mae_db=round(float(np.mean(np.abs((lp_db - lp_db.mean()) - (lo_db - lo_db.mean())))), 2),
+                                               range_orig_db=round(float(lo_db.max() - lo_db.min()), 1))
+    a0, z0 = edges[0][0], edges[-1][1]
+    res["tf_logmel_corr_all_bars"] = tf_corr(o[a0:z0], p[a0:z0])
+    return res
+
+
+def build_compare(out, an, grid, bar0, rend, rend_drums, tag, cps, scale=1.0, extras=None, rumble=False):
     exc, _ = sf.read(str(out / "excerpt.wav"), always_2d=True)
     drums, _ = sf.read(str(out / "stems" / "drums.wav"), always_2d=True)
     nbars = an["nbars"]
@@ -270,6 +325,9 @@ def build_compare(out, an, grid, bar0, rend, rend_drums, tag, cps, scale=1.0, ex
     # Strudel output to reach the original's RMS on the rendered blocks (0 = postgains reproduce the mix level)
     metrics["level_gap_db"] = round(20 * np.log10(g * scale), 2)
     metrics["tf_logmel_corr"] = tf_corr(exc[sel].mean(1), placed[sel].mean(1))
+    metrics.update(band_metrics(exc.mean(1), placed.mean(1), sel, bar_t, nbars))
+    # absolute band gap = what the code itself misses per band (postgains), = relative gap - level gap
+    metrics["band_gap_abs_db"] = {k: round(v - metrics["level_gap_db"], 2) for k, v in metrics["band_gap_db"].items()}
 
     def place_x(src):
         """same placement as the main render (stretch + shift, or bar by bar)."""
@@ -302,6 +360,18 @@ def build_compare(out, an, grid, bar0, rend, rend_drums, tag, cps, scale=1.0, ex
                 rms_diff_db_per_block=bl,
                 spectral_profile_corr_all=round(float(np.corrcoef(po_all, logmel_profile(px[sel].mean(1)))[0, 1]), 3),
                 tf_logmel_corr=tf_corr(exc[sel].mean(1), px[sel].mean(1)))
+        elif name_x.startswith("group_"):  # v2.4: each stem group of the render vs its original stem
+            grp = name_x.split("_", 1)[1]
+            stems_g = [GROUP_STEM[grp]] + (["bass"] if grp == "drums" and rumble else [])   # kick one-shot holds the rumble
+            stem = sum(sf.read(str(out / "stems" / f"{x}.wav"), always_2d=True)[0] for x in stems_g)
+            sm, pm_ = stem.mean(1), px.mean(1) * (g * scale / max(sc_x, 1e-12))   # same gain as the full render
+            gd = {}
+            for bn, lo, hi in (("all", None, None),) + BANDS:
+                a_, b_ = (sm, pm_) if bn == "all" else (bandx(sm, lo, hi), bandx(pm_, lo, hi))
+                gd[bn] = round(float(20 * np.log10((np.sqrt(np.mean(b_[sel] ** 2)) + 1e-12) / (np.sqrt(np.mean(a_[sel] ** 2)) + 1e-12))), 2)
+            metrics.setdefault("groups", {})[grp] = dict(gap_db=gd, tf_logmel_corr=tf_corr(sm[sel], pm_[sel]))
+            (out / "diag").mkdir(exist_ok=True)
+            sf.write(out / "diag" / f"group_{grp}_placed.wav", pm_.astype(np.float32), SR, subtype="FLOAT")
         else:  # solo_vox / solo_other vs the original stem
             lane = name_x.split("_", 1)[1]
             stem, _ = sf.read(str(out / "stems" / ("vocals.wav" if lane.startswith("vox") else "other.wav")), always_2d=True)
@@ -318,6 +388,8 @@ def build_compare(out, an, grid, bar0, rend, rend_drums, tag, cps, scale=1.0, ex
     pk = np.abs(mix).max()
     name = "compare_ab_strudel.wav" if tag == "samples" else "compare_ab_strudel_synth.wav"
     sf.write(out / name, mix / max(1, pk / 0.98), SR, subtype="PCM_16")
+    # v2.4: the whole render placed on the excerpt's time line (RMS matched), for per-lane diagnostics
+    sf.write(out / f"render_{tag}_placed.wav", (placed / max(1.0, float(np.abs(placed).max()) / 0.98)).astype(np.float32), SR, subtype="FLOAT")
     return name, metrics
 
 
@@ -328,6 +400,8 @@ def main():
     ap.add_argument("--bars", type=int, default=None, help="cycles to render (default: all bars of the excerpt)")
     ap.add_argument("--renderer-dir", default=str(ROOT / "tools" / "strudel-render"))
     ap.add_argument("--samples-dir", default=str(ROOT / "samples"))
+    ap.add_argument("--groups", action="store_true", help="also render each stem group (drums / bass / other / vox) "
+                    "and compare it with its stem (compare_strudel.json 'groups': band gaps, tf corr)")
     a = ap.parse_args()
     out = Path(a.out).resolve(); slug = out.name
     rdir = Path(a.renderer_dir).resolve(); sdir = Path(a.samples_dir).resolve()
@@ -356,6 +430,11 @@ def main():
         if any(has_loop(code, k) for k in ("vox", "other")):
             variants.append(("before", before_loops(code)))     # v2 version, for before / after metrics
         variants += [(f"solo_{k}", solo(code, k)) for k in ("vox", "other") if has_loop(code, k)]
+        if a.groups:
+            for grp in GROUP_STEM:
+                gc = group_code(code, grp)
+                if any(l.startswith("$:") for l in gc.splitlines()):
+                    variants.append((f"group_{grp}", gc))
         for vn, vcode in variants:
             f = tmp / f"{v}_{vn}.strudel.js"; f.write_text(vcode, encoding="utf-8")
             w = tmp / f"{v}_{vn}.wav"
@@ -364,7 +443,8 @@ def main():
             extras[vn] = (x, inf["scale"])
             if vn == "before":
                 shutil.copy(w, out / f"render_{v}_before_loops.wav")
-        name, m = build_compare(out, an, grid, bar0, r, rd, v, info["cps"], info["scale"], extras)
+        name, m = build_compare(out, an, grid, bar0, r, rd, v, info["cps"], info["scale"], extras,
+                                rumble="rumble from the bass stem" in code)
         m["render"] = {k: info[k] for k in ("cps", "raw_peak", "scale", "render_ms", "seconds")}
         allm[v] = m
         log(f"{slug} [{v}] -> {name}: first kick in render at {m['render_first_kick_onset_ms']} ms, "

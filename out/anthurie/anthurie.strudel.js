@@ -1,5 +1,5 @@
 // ======================================================================
-// track2strudel v2.3 : Anthurie-BorisB.mp3
+// track2strudel v2.4 : Anthurie-BorisB.mp3
 // excerpt       : 79.6s -> 141.3s
 // BPM 125.0 (kick inter-onset fit, residual 0.4 ms; beat_this said 125.0)   key ~ F minor   (1 cycle = 1 bar)
 // alignment     : kick on 0/4/8/12 = 100.0% of kicks, 30/33 bars 4-on-floor (ADTOF latency corrected -0.25 step)

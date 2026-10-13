@@ -1,4 +1,4 @@
-"""track2strudel (v2) — audio -> stems -> beats/drums/bass/lead -> 16-step loops -> Strudel code.
+"""track2strudel (v2.4) — audio -> stems -> beats/drums/bass/lead -> 16-step loops -> Strudel code.
 
 Usage:
   python tools\\track2strudel.py <audio> [--start S --dur D] [--out out\\<slug>]
@@ -7,7 +7,7 @@ Usage:
 Outputs in <out>: excerpt.wav, stems\\, beats.tsv, drums.mid, bass.mid, lead.mid,
 analysis.json, check_overlay.wav, <slug>.strudel.js, [compare_ab.wav]
 """
-import argparse, json, re, subprocess, sys, time
+import argparse, json, os, re, subprocess, sys, time
 from collections import Counter
 from pathlib import Path
 
@@ -29,6 +29,7 @@ LANES = {"kick": ("bd", 36), "clap": ("cp", 39), "perc": ("rim", 37), "hh": ("hh
          "oh": ("oh", 46), "ride": ("rd", 51)}
 MIN_CONF = 0.6          # lanes below this loop confidence are emitted commented-out
 CLAP_R_MID = 1.25       # 1-3 kHz: beats 2&4 vs 1&3 flux ratio (v1 value)
+BANDPERC_DB = 10.0      # v2.4: band-detected perc hits (dB over the 16th's median level)
 CLAP_R_HI = 1.5         # 3-7 kHz: same, stricter (hats live there too)
 
 
@@ -570,6 +571,11 @@ def detections(exc, out, drums_wav):
     if cache.exists():
         d = json.loads(cache.read_text(encoding="utf-8"))
         log("beats / drums: cached detections (_detections.json)")
+        if not (out / "beats.tsv").exists():   # cache copied without the run's other outputs
+            db = {round(x, 4) for x in d["downbeats"]}
+            with open(out / "beats.tsv", "w") as f:
+                for x in d["beats"]:
+                    f.write(f"{x:.4f}\t{1 if round(x, 4) in db else 0}\n")
         return (np.array(d["beats"]), np.array(d["downbeats"]),
                 {k: (np.array(v[0]), np.array(v[1])) for k, v in d["hits"].items()})
     try:
@@ -1105,6 +1111,33 @@ def main():
         clap, perc = snare_all, raw_grid["tom"]
     lanes_grid.update(clap=clap, perc=perc, hh=raw_grid["hh"], oh=raw_grid["oh"], ride=raw_grid["ride"])
     devs["clap"] = devs["snare"]; devs["perc"] = devs["tom"]
+    # v2.4: percussion ADTOF missed (e.g. an 8-bar rim / tom figure in a hats+kick techno groove): 800-6000 Hz
+    # level of a 16th >= 10 dB above that 16th's median over the excerpt, loud (>= loudest median - 12 dB),
+    # in >= 4 consecutive bars, on a 16th no clap / perc already holds -> perc hits (drums.mid GM 47; open hats there removed)
+    band_perc = np.zeros((nbars, STEPS))
+    if not os.environ.get("T2S_NO_BANDPERC"):
+        Ep = step_levels(hilbert_env(band_filter(y_dr, 800, 6000)), step_t, nbars)
+        medp = np.nanmedian(Ep, 0)
+        flag = np.nan_to_num(Ep - medp[None], nan=-99) >= BANDPERC_DB
+        flag &= np.nan_to_num(Ep, nan=-999) >= np.nanmax(medp) - 12
+        flag &= ~((lanes_grid["clap"] > 0) | (lanes_grid["perc"] > 0))
+        for st_ in range(STEPS):
+            b_ = 0
+            while b_ < nbars:
+                if flag[b_, st_]:
+                    e_ = b_
+                    while e_ < nbars and flag[e_, st_]:
+                        e_ += 1
+                    if e_ - b_ >= 4:
+                        band_perc[b_:e_, st_] = 0.7
+                    b_ = e_
+                else:
+                    b_ += 1
+        if band_perc.any():
+            lanes_grid["perc"] = np.maximum(lanes_grid["perc"], band_perc)
+            lanes_grid["oh"] = np.where(band_perc > 0, 0, lanes_grid["oh"])   # ADTOF called some of them open hats
+            log(f"band perc (800-6000 Hz, missed by ADTOF): {int((band_perc > 0).sum())} hits on 16ths "
+                f"{sorted(set(np.nonzero(band_perc)[1].tolist()))}")
 
     # drums.mid (raw ADTOF times + band claps)
     pm = pretty_midi.PrettyMIDI(initial_tempo=tempo["bpm"])
@@ -1116,6 +1149,9 @@ def main():
     for b, i in zip(*np.nonzero(clap_band)):
         t = float(grid.step_time((b + bar0) * STEPS + i))
         inst.notes.append(pretty_midi.Note(int(30 + 97 * clap_band[b, i]), 39, t, t + 0.08))
+    for b, i in zip(*np.nonzero(band_perc)):
+        t = float(grid.step_time((b + bar0) * STEPS + i))
+        inst.notes.append(pretty_midi.Note(int(30 + 97 * band_perc[b, i]), 47, t, t + 0.08))
     pm.instruments.append(inst)
 
     # --- per-bar activity + main groove
@@ -1151,6 +1187,8 @@ def main():
         use = active[name] & main
         if use.sum() < max(2, 0.25 * main.sum()):  # too sparse -> drop lane
             continue
+        if name == "perc" and band_perc.any() and not ((g > 0) & (band_perc == 0)).any():
+            continue   # v2.4: band-detected perc only -> sparse lane (audio-verified bars), not a loop
         toks = [["x" if g[b, i] > 0 else "" for i in range(STEPS)] for b in range(nbars)]
         L, loop, conf, scores = find_loop(toks, use, a.bars_per_loop)
         if not any(t == "x" for r in loop for t in r):
@@ -1302,7 +1340,7 @@ def main():
                     key=key, key_corr=key_r,
                     nbars=nbars, main_groove_bars=sorted(main_bars), alignment=align, swing=sw_info,
                     clap_detection=clap_info, clap_backbeat_share=round(bb_share, 2), legacy_snare_lane=legacy,
-                    open_hat_count=int(is_open.sum()), sections=secs,
+                    open_hat_count=int(is_open.sum()), sections=secs, band_perc_hits=int((band_perc > 0).sum()),
                     prefix=prefix, tuning=tuning,
                     lane_attack_ms={k: round(v * 1000, 2) for k, v in att.items()},
                     full_bars=full_bars, variants=variant_info,
@@ -1449,7 +1487,7 @@ def render_strudel(src, a, grid, key, loops, secs, align, sw_info, clap_info, te
     rng = (f"{a.start or 0:.1f}s -> {(a.start or 0) + a.dur:.1f}s" if a.dur else f"{a.start or 0:.1f}s -> end")
     sw = grid.swing
     L = ["// " + "=" * 70,
-         f"// track2strudel v2.3 : {src.name}",
+         f"// track2strudel v2.4 : {src.name}",
          f"// excerpt       : {rng}",
          f"// BPM {bpm} ({'kick inter-onset fit, residual ' + str(tempo['fit']['residual_std_ms']) + ' ms' if tempo['source'] == 'kick fit' else 'beat_this grid'}; "
          f"beat_this said {tempo['beat_this_bpm']})   key ~ {key}   (1 cycle = 1 bar)",

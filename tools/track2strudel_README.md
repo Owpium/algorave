@@ -1,4 +1,4 @@
-# track2strudel (v2.3)
+# track2strudel (v2.4)
 
 Audio -> stems (demucs) -> beats (beat_this) -> drums (ADTOF) + bass/lead (basic-pitch)
 -> 16-step grid per bar -> main loop per lane (+ audio-verified bar variants, per-bar velocity) -> Strudel code.
@@ -7,7 +7,49 @@ Audio -> stems (demucs) -> beats (beat_this) -> drums (ADTOF) + bass/lead (basic
 .venv\Scripts\python.exe tools\track2strudel.py "refs\track.mp3" [--start S --dur D] [--out out\slug]
     [--bars-per-loop auto|1|2|4] [--no-overlay] [--no-lead] [--compare] [--samples] [--prefix gw] [--no-variants]
 ```
-Batch for the 5 reference excerpts (code + samples + render): `bash tools/run_v23_excerpts.sh`.
+Batch for the 5 reference excerpts (code + samples + render): `bash tools/run_v24_excerpts.sh` (v2.3: `run_v23_excerpts.sh`).
+
+## v2.4 changes (2026-10) - techno: rumble, ghost hats, missed percs, stem level
+All generic, each one only acts when its condition is detected (env switches to disable them for A/B tests:
+`T2S_NO_RUMBLE`, `T2S_NO_TILE`, `T2S_NO_STEPFIT`, `T2S_NO_ADD`, `T2S_NO_DROP`, `T2S_NO_MIXGAIN`, `T2S_NO_HYBRID`,
+`T2S_NO_BANDPERC`). Also fixed: a run with a copied `_detections.json` but no `beats.tsv` rewrites it from the cache.
+- **Kick + rumble = one lane** (extract_samples `rumble_info`): if the kick is 4-on-the-floor and the bass stem repeats
+  every beat (energy of the beat-synchronous mean / mean beat energy >= 0.8, < 400 Hz, bass within 12 dB of the drums),
+  the bass stem is the kick's reverb / distorted tail ("rumble", Contradiction 0.94; tonal basslines 0.06-0.57). The kick
+  one-shot is then cut from drums + bass < 400 Hz (phase-locked like the original), the bass note line is commented.
+  A sustained `f#1` note can't follow a per-beat envelope and is not phase-coherent with the kick: the sum came out
+  ~2 dB too quiet below 150 Hz.
+- **Tiled kick**: 4-on-the-floor -> the kick one-shot is exactly one beat with 1-2 ms fades, consecutive hits tile
+  into the continuous tail (the 15 % cosine fade-out removed ~70 ms of tail before every kick: -5 dB on step 3).
+  Hybrid kick (mean < 1.5 kHz + medoid above) when the 6-hit mean loses > 1.5 dB above 4 kHz.
+- **Per-16th gains fitted on the audio** (hh / oh / ride, `fit_step_gains`): per main bar, the lane band energy envelope
+  of the drums stem is fitted by NNLS with the lane template's envelope on each of its 16ths + the other lanes'
+  templates (per-bar template when the lane has a timbre change point; bars of 0.wav only); gain = sqrt(median
+  coefficient), postgain from the same fit (agrees with the v2.3 attack-energy level within 0.3 dB on clean fits; a fit
+  > 6 dB under it - dense overlapping 16ths - keeps the v2.3 level). Replaces the v2.3 `0.4 + 0.6 x/max` flux
+  accents, which played ADTOF ghost hats (15-20 dB under the off-beat hat) at -6 dB (+13..17 dB too much > 4 kHz).
+  - 16ths fitted under 0.01 (-40 dB) are removed from the rows; 16ths no row has but where the all-16ths fit puts
+    >= 0.15 of the loudest 16th are **added** (only when the lane explains >= 80 % of its band: unambiguous model).
+  - A lane that plays in >= 75 % of the bars but explains < 10 % of its band energy once the others are fitted
+    (Contradiction's "open hat" on 16th 3 = the decay of the off-beat hat) is left commented (`T2S_NO_DROP`).
+- **Band perc** (track2strudel): 800-6000 Hz level of a 16th >= 10 dB above that 16th's median, loud, in >= 4
+  consecutive bars, where no clap / perc is -> perc hits ADTOF missed (drums.mid GM 47; open hats there removed),
+  emitted as a sparse audio-verified lane (Contradiction: 8-bar figure on 16th 5).
+- **Quiet 'other' loop**: the other stem is looped down to -36 dB under the mix (instead of -26) when basic-pitch
+  found a consistent pitched loop in it (lead emitted, pitch agreement >= 0.8): Contradiction's c/d#/g stab sits there.
+- **Stem -> mix gain**: Demucs' stems sum to ~0.87-0.9 x the mix (residual mostly a scaled copy): every postgain is
+  multiplied by the LS gain mix / sum(stems) (+0.8..+1.2 dB on the refs) -> A/B level gap ~0 dB.
+- render_strudel.py metrics (compare_strudel.json): `band_gap_db` (<= 150 / 150-4k / > 4k, render vs original
+  after the RMS match), `band_gap_abs_db` (same, as the code plays it = relative gap - level gap), `per_bar_level_corr`
+  (r and mean abs error of the per-bar level, full band and per band, all bars), `tf_logmel_corr_all_bars`;
+  `render_samples_placed.wav` (whole render on the excerpt timeline); `--groups`: renders each stem group
+  (drums / bass / other / vox) and compares it with its stem (drums + bass when the rumble is folded) -> `groups`,
+  `diag\group_*_placed.wav`.
+- Contradiction excerpt moved to the main peak groove (track 97.1-157.1 s = full-track bars 53-84: < 150 Hz and
+  > 4 kHz flat); the v2.3 excerpt (262.05 s) ended in an 8-bar filtered build (< 150 Hz -9 dB, > 4 kHz -15 dB).
+  No acid / 303 line in the track: bass stem = rumble (per-beat coherence 0.94), 'other' = a quiet c/d#/g stab
+  (C minor over an F# rumble: the key estimate wavers between F# and G/C). The old excerpt is kept as the slug
+  `contradiction_oldexcerpt` (prefix `cx`) for comparison.
 
 ## v2.3 changes (2026-10)
 - **Swing from the audio**: each ADTOF hat is re-timed on the > 7 kHz envelope of the drums stem (kick-fit grid);

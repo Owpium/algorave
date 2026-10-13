@@ -1,5 +1,5 @@
 // ======================================================================
-// track2strudel v2.3 : Marke (GR) - The Story (Original Mix).mp3
+// track2strudel v2.4 : Marke (GR) - The Story (Original Mix).mp3
 // excerpt       : 53.6s -> 115.1s
 // BPM 124.0 (kick inter-onset fit, residual 0.54 ms; beat_this said 124.023)   key ~ C minor   (1 cycle = 1 bar)
 // alignment     : kick on 0/4/8/12 = 98.3% of kicks, 28/33 bars 4-on-floor (ADTOF latency corrected -0.08 step)

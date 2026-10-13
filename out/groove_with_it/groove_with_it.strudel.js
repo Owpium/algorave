@@ -1,5 +1,5 @@
 // ======================================================================
-// track2strudel v2.3 : Deep Spelle - Groove With It.mp3
+// track2strudel v2.4 : Deep Spelle - Groove With It.mp3
 // excerpt       : 206.2s -> 268.9s
 // BPM 122.999 (kick inter-onset fit, residual 1.44 ms; beat_this said 123.037)   key ~ B minor   (1 cycle = 1 bar)
 // alignment     : kick on 0/4/8/12 = 92.5% of kicks, 30/34 bars 4-on-floor (ADTOF latency corrected -0.09 step)

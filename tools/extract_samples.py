@@ -40,7 +40,7 @@ import pretty_midi
 from scipy.signal import butter, sosfiltfilt, hilbert
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from track2strudel import Grid, STEPS, LANES, midi_name, derive_prefix, vel_pattern, rle  # noqa: E402
+from track2strudel import Grid, STEPS, LANES, midi_name, derive_prefix, vel_pattern, rle, mini_bar, bjorklund  # noqa: E402
 import extract_loops  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -188,9 +188,9 @@ def cut_at(y, t0, dur):
     return seg
 
 
-def finish(x, fade_out_frac=0.15, fade_in_ms=1.0):
+def finish(x, fade_out_frac=0.15, fade_in_ms=1.0, min_fade_ms=10.0):
     x = x.copy(); n = len(x)
-    fi = max(1, int(fade_in_ms * 1e-3 * SR)); fo = max(int(0.01 * SR), int(fade_out_frac * n))
+    fi = max(1, int(fade_in_ms * 1e-3 * SR)); fo = max(int(min_fade_ms * 1e-3 * SR), int(fade_out_frac * n), 1)
     x[:fi] *= np.linspace(0, 1, fi)[:, None]
     x[-fo:] *= (0.5 + 0.5 * np.cos(np.linspace(0, np.pi, fo)))[:, None]
     return x
@@ -223,8 +223,14 @@ def corr(a, b):
 
 
 # ------------------------------------------------------------------ drums
-def extract_drums(out, an, y, grid, bar0, step_s, steps):
+def extract_drums(out, an, y, grid, bar0, step_s, steps, kick_extra=None, tile_kick=False):
+    """kick_extra (v2.4): audio added to the drums stem for the kick lane only (the bass stem's per-beat rumble:
+    kick + rumble become one one-shot, phase-locked like in the original). tile_kick: 4-on-the-floor kick ->
+    the one-shot is exactly one beat long with 1-2 ms fades, so consecutive kicks tile into a continuous tail
+    (a 15 % cosine fade-out removed the last ~70 ms of tail / rumble before every kick: -5 dB on step 3)."""
     t0f, q0f, code_off = steps
+    ys = {"kick": y + kick_extra} if kick_extra is not None else {}
+    Y = lambda k: ys.get(k, y)
     hits = lane_hits(out, an, grid, bar0)
     main = set(an.get("main_groove_bars", []))
     yb = {k: sosfiltfilt(sos_band(*BAND[k]), mono(y)) for k in LEN}
@@ -242,6 +248,8 @@ def extract_drums(out, an, y, grid, bar0, step_s, steps):
         nxt = nxt[nxt > 0.5 * step_s]
         cap = (4 * step_s - 0.006) if k == "kick" else (float(np.median(nxt)) if len(nxt) else LEN[k])
         Ls[k] = float(min(LEN[k], max(cap, 0.08)))
+        if k == "kick" and tile_kick:
+            Ls[k] = 4 * step_s
         a_k = att.get(k)
         fade_in[k] = max(1.0, ((a_k / 1000 - code_off) * 1000 - 1.0) if a_k is not None else 1.0)
     # contamination of each hit: other-lane hits from 1 step before to the end of the window
@@ -266,7 +274,7 @@ def extract_drums(out, an, y, grid, bar0, step_s, steps):
     templates, res, split_log = {}, {}, {}
 
     def seg_of(k, t):
-        return cut_at(y, t - pre[k], Ls[k])
+        return cut_at(Y(k), t - pre[k], Ls[k])
 
     def place(T, pos, n, ch=None):
         f = np.zeros((n,) + T.shape[1:])
@@ -300,7 +308,7 @@ def extract_drums(out, an, y, grid, bar0, step_s, steps):
         """mean(hits) - LS-scaled mean(references), everything aligned on the shared lane's band."""
         sbd = sos_band(*BAND[dom])
         segs = [seg_of(k, r["t"]) for r in cand]
-        rsegs = [cut_at(y, t - pre[dom], Ls[k]) for t in refs]
+        rsegs = [cut_at(Y(k), t - pre[dom], Ls[k]) for t in refs]
         ref0 = np.median([sosfiltfilt(sbd, mono(s)) for s in rsegs], axis=0)
         mx = int(0.003 * SR)
         rsegs = [np.roll(s, xalign(ref0, sosfiltfilt(sbd, mono(s)), mx), axis=0) for s in rsegs]
@@ -343,10 +351,23 @@ def extract_drums(out, an, y, grid, bar0, step_s, steps):
             elif tc > 0.6 * L:
                 mean_k, v1 = mean_k[:i0], v1[:i0]
                 tail_fix = f"cut at {tc * 1000:.0f} ms"
-        v0 = finish(trim_tail(mean_k), fade_in_ms=fade_in.get(k, 1.0))
-        v1 = finish(trim_tail(v1), fade_in_ms=fade_in.get(k, 1.0))
+        if k == "kick" and tile_kick:
+            v0 = finish(mean_k, fade_out_frac=0.0, fade_in_ms=1.0, min_fade_ms=2.0)
+            v1 = finish(v1, fade_out_frac=0.0, fade_in_ms=1.0, min_fade_ms=2.0)
+        else:
+            v0 = finish(trim_tail(mean_k), fade_in_ms=fade_in.get(k, 1.0))
+            v1 = finish(trim_tail(v1), fade_in_ms=fade_in.get(k, 1.0))
         # noise-like sounds (hats, claps): averaging 6 hits cancels the incoherent > 4 kHz part (-2.6 dB on
         # hats, -5 dB on claps at equal peak) -> the medoid hit becomes 0.wav when the mean lost > 1.5 dB there
+        if k == "kick" and not os.environ.get("T2S_NO_HYBRID"):
+            # v2.4: the mean of 6 kicks keeps the coherent body / rumble but averages the click's top away
+            # (-9 dB > 12 kHz on Contradiction): hybrid = mean < 1.5 kHz + medoid hit above (complementary split)
+            lpx = sos_band(None, 1500); hp4 = sos_band(4000, None)
+            e4 = lambda x: float(np.sum(sosfiltfilt(hp4, mono(x)) ** 2))
+            loss = 10 * np.log10((e4(v0) + 1e-20) / (e4(v1) + 1e-20))
+            if loss < -1.5:
+                v0 = sosfiltfilt(lpx, v0, axis=0) + (v1 - sosfiltfilt(lpx, v1, axis=0))
+                tail_fix = (tail_fix or "") + f"{'; ' if tail_fix else ''}0.wav = mean < 1.5 kHz + medoid above (mean lost {-loss:.1f} dB > 4 kHz)"
         if k in NOISY:
             hp4 = sos_band(4000, None)
             ehf = lambda x: float(np.sum(sosfiltfilt(hp4, mono(x)) ** 2) / (np.abs(x).max() ** 2 + 1e-12))
@@ -392,7 +413,7 @@ def extract_drums(out, an, y, grid, bar0, step_s, steps):
         best split (>= 4 bars each side) by between-group distance / within-group spread."""
         F = {}
         for r in rr:
-            seg = mono(cut_at(y, r["t"] - pre[k], min(Ls[k], step_s))).astype(np.float32)   # up to the next 16th
+            seg = mono(cut_at(Y(k), r["t"] - pre[k], min(Ls[k], step_s))).astype(np.float32)   # up to the next 16th
             S = librosa.power_to_db(librosa.feature.melspectrogram(y=seg, sr=SR, n_fft=1024, hop_length=256, n_mels=32, fmin=30) + 1e-10, top_db=80)
             F.setdefault(int(np.floor(q0f(r["t"]) / STEPS)), []).append(S.ravel())
         bars = sorted(F)
@@ -517,6 +538,181 @@ def extract_drums(out, an, y, grid, bar0, step_s, steps):
                                **{f"variant{j}_vs_hits_median": round(float(np.median([corr(p, q) for q in P])), 3)
                                   for j, p in enumerate(ps)})
     return res, hits
+
+
+def stem_mix_gain(out):
+    """LS amplitude gain mix ~ g * (drums + bass + other + vocals)."""
+    x = sf.read(str(out / "excerpt.wav"), always_2d=True)[0]
+    S = sum(sf.read(str(out / "stems" / f"{k}.wav"), always_2d=True)[0] for k in ("drums", "bass", "other", "vocals"))
+    n = min(len(x), len(S))
+    return float(np.sum(x[:n] * S[:n]) / (np.sum(S[:n] ** 2) + 1e-12))
+
+
+def four_on_floor(an):
+    lp = an.get("lanes", {}).get("kick", {}).get("loop") or []
+    return bool(lp) and all([i for i, h in enumerate(r) if h] == [0, 4, 8, 12] for r in lp)
+
+
+def rumble_info(out, an, steps, min_coh=0.8, max_below_db=12.0):
+    """v2.4: techno 'rumble' = a reverb / distorted kick tail tuned to the key that Demucs puts in the bass stem.
+    Detected as a bass stem that repeats every beat (energy of the beat-synchronous mean / mean beat energy
+    >= min_coh on the full bars, < 400 Hz) with a 4-on-the-floor kick and a bass level within max_below_db
+    of the drums. Then kick + rumble are one lane (the one-shot is cut from drums + bass < 400 Hz), and the
+    bass note line (a sustained f#1 that can't follow the per-beat envelope / phase) is commented out."""
+    t0f, q0f, off = steps
+    wav = out / "stems" / "bass.wav"
+    if not wav.exists() or not four_on_floor(an):
+        return None
+    yb = sf.read(str(wav), always_2d=True)[0]
+    yd = mono(sf.read(str(out / "stems" / "drums.wav"), always_2d=True)[0])
+    lp = sos_band(None, 400)
+    bl = sosfiltfilt(lp, yb, axis=0)
+    m = mono(bl)
+    fb = an.get("full_bars") or list(range(1, an["nbars"] - 1))
+    main = set(an.get("main_groove_bars") or fb)
+    n = int(round(float(t0f(4) - t0f(0)) * SR))      # one beat
+    segs = []
+    for b in fb:
+        if b not in main:
+            continue
+        for j in range(4):
+            a = int(round((float(t0f(b * STEPS + 4 * j)) + off) * SR))
+            if a >= 0 and a + n <= len(m):
+                segs.append(m[a:a + n])
+    if len(segs) < 16:
+        return None
+    S = np.array(segs); mu = S.mean(0)
+    coh = float(np.sum(mu ** 2) / np.mean(np.sum(S ** 2, 1)))
+    rel = float(20 * np.log10(np.sqrt(np.mean(m ** 2)) / (np.sqrt(np.mean(sosfiltfilt(lp, yd) ** 2)) + 1e-12) + 1e-12))
+    info = dict(beat_coherence=round(coh, 3), bass_vs_drums_lt400_db=round(rel, 1), n_beats=len(segs))
+    info["folded"] = bool(coh >= min_coh and rel >= -max_below_db)
+    return info, (bl if info["folded"] else None)
+
+
+def lane_rows(an, k, nbars):
+    """the 16-step row the code plays in each bar for lane k (pick variants / loop), or None."""
+    v = an.get("lanes", {}).get(k)
+    if not v:
+        return None
+    if v.get("arr"):
+        rows, seq = v["arr"]["variants"], v["arr"]["seq"]
+        return [rows[seq[b]] if b < len(seq) else rows[0] for b in range(nbars)]
+    L = v["L"]
+    return [v["loop"][b % L] for b in range(nbars)]
+
+
+FIT_LANES = ("hh", "oh", "ride")
+ADD_THR = 0.0 if os.environ.get("T2S_NO_ADD") else 0.15   # v2.4: 16ths added to a fitted lane (gain vs its loudest 16th)
+MIN_STEP_GAIN = 0.01   # fitted 16ths under this (-40 dB) are removed from the rows
+ADD_MIN_EXPLAINED = 0.8   # ...only when the lane dominates its band (the model is unambiguous)
+MIN_EXPLAINED = 0.10   # a fitted lane explaining less of its band energy than this is left commented
+
+
+def fit_step_gains(an, y, steps, drums, lanes=FIT_LANES, hop=64, smooth_ms=12.0):
+    """v2.4: per-16th gain of the noisy lanes, fitted on the audio. The v2.3 accent gains came from a
+    compressed spectral flux (0.4 + 0.6 x / max): ADTOF 'ghost' hats sitting 15-20 dB under the main
+    off-beat hat were played at -6 dB (+13..17 dB too much > 4 kHz on those 16ths, Contradiction).
+    Per full main bar, the band energy envelope of the drums stem (lane band, 4 ms smoothing) is fitted by
+    non-negative least squares with the lane's template energy envelope at each of its hits (one coefficient
+    per 16th) + the other lanes' templates (one free coefficient per lane, hits of this and the previous bar).
+    Gain of a 16th = sqrt(median coefficient over the bars where it plays), in the template's raw scale."""
+    from scipy.optimize import nnls
+    t0f, q0f, off = steps
+    nb = an["nbars"]
+    fb = [b for b in (an.get("full_bars") or range(1, nb - 1)) if b >= 1]
+    main = set(an.get("main_groove_bars") or fb)
+    bars = [b for b in fb if b in main] or fb
+    rows = {k: lane_rows(an, k, nb) for k in drums if k in an.get("lanes", {})}
+    rows = {k: r for k, r in rows.items() if r}
+    m = mono(y); bar_n = int(round(float(t0f(16) - t0f(0)) * SR))
+    res = {}
+    for k in lanes:
+        if k not in rows or k not in drums:
+            continue
+        lo, hi = BAND[k]
+        sb = sos_band(lo, hi)
+        ns = max(1, int(smooth_ms * 1e-3 * SR))
+        envf = lambda x: np.convolve(sosfiltfilt(sb, x) ** 2, np.ones(ns) / ns, mode="same")[::hop]
+        eo = envf(m)
+        # template per bar: a lane with a timbre change point plays variant seq[b] (.n("<...>")) in bar b
+        T = {o: [envf(mono(v)) for v in drums[o]["variants"]] for o in rows}
+        tsel = lambda o, bb: T[o][(drums[o].get("section") or {}).get("seq", [0] * (bb + 1))[bb] if drums[o].get("section") and bb < len(drums[o]["section"]["seq"]) else 0]
+        sec = drums[k].get("section")
+        bars_k = [b for b in bars if not sec or (b < len(sec["seq"]) and sec["seq"][b] == 0)]   # bars of 0.wav
+        bars_k = bars_k if len(bars_k) >= 4 else bars
+
+        def fit(all_steps):
+            coefs = {i: [] for i in range(STEPS)}
+            expl = []
+            for b in bars_k:
+                a0 = int(round((float(t0f(b * STEPS)) + off) * SR)) // hop
+                n = bar_n // hop
+                if a0 < 0 or a0 + n > len(eo):
+                    continue
+                target = eo[a0:a0 + n]
+                cols, names = [], []
+                other = {}
+                for bb in (b - 1, b):
+                    for o, rr in rows.items():
+                        if bb < 0 or bb >= nb:
+                            continue
+                        for i, h in enumerate(rr[bb]):
+                            if not h:
+                                continue
+                            pos = int(round((float(t0f(bb * STEPS + i)) + off) * SR)) // hop - a0
+                            e = np.zeros(n); tt = tsel(o, bb)
+                            s0, s1 = max(pos, 0), min(pos + len(tt), n)
+                            if s1 <= s0:
+                                continue
+                            e[s0:s1] = tt[s0 - pos:s1 - pos]
+                            if o == k and bb == b:
+                                if not all_steps:
+                                    cols.append(e); names.append(i)
+                            elif o == k:
+                                other.setdefault("prev_" + o, np.zeros(n))
+                                other["prev_" + o] += e
+                            else:
+                                other.setdefault(o, np.zeros(n))
+                                other[o] += e
+                if all_steps:   # the lane's template on every 16th of this bar
+                    for i in range(STEPS):
+                        pos = int(round((float(t0f(b * STEPS + i)) + off) * SR)) // hop - a0
+                        e = np.zeros(n); tt = tsel(k, b); s1 = min(pos + len(tt), n)
+                        e[pos:s1] = tt[:s1 - pos]
+                        cols.append(e); names.append(i)
+                if not cols:
+                    continue
+                A = np.stack(cols + list(other.values()), 1)
+                sc = np.abs(A).max(0) + 1e-20
+                c, r1 = nnls(A / sc, target)
+                c = c / sc
+                for j, i in enumerate(names):
+                    coefs[i].append(c[j])
+                # explained energy of the lane: residual without its columns (this bar's hits + previous bar's tails)
+                keep = [j for j, nm in enumerate(list(range(len(cols))) + list(other)) if j >= len(cols) and nm != "prev_" + k]
+                r0 = nnls(A[:, keep] / sc[keep], target)[1] if keep else float(np.linalg.norm(target))
+                expl.append(1 - r1 ** 2 / max(r0 ** 2, 1e-30))
+
+            return coefs, expl
+        coefs, expl = fit(False)
+        coefs_all, _ = fit(True) if ADD_THR else ({}, None)
+        g = {i: float(np.sqrt(np.median(v))) for i, v in coefs.items() if len(v) >= 3}
+        if g and max(g.values()) > 0:
+            res[k] = dict(gain_raw=g, n_bars=len(bars), max_raw=max(g.values()),
+                          explained=round(float(np.median(expl)), 4) if expl else None, add={},
+                          plays_frac=round(float(np.mean([any(rows[k][b]) for b in fb])), 3))
+            # 16ths the audio holds but ADTOF never gave this lane (e.g. the 16th after each off-beat hat)
+            ga = {i: float(np.sqrt(np.median(v))) for i, v in coefs_all.items() if len(v) >= 3}
+            used = {i for r in rows[k] for i, h in enumerate(r) if h}
+            ref = max([ga.get(i, 0.0) for i in used] or [0.0])
+            if ref > 0 and (res[k]["explained"] or 0) >= ADD_MIN_EXPLAINED:
+                for i, v in ga.items():
+                    if i not in used and v / ref >= ADD_THR:
+                        res[k]["add"][i] = v / ref
+        elif g:   # the other lanes explain everything: no own energy at all
+            res[k] = dict(gain_raw={i: 1.0 for i in g}, n_bars=len(bars), max_raw=1.0, explained=0.0,
+                          plays_frac=round(float(np.mean([any(rows[k][b]) for b in fb])), 3))
+    return res
 
 
 # ------------------------------------------------------------------ pitched
@@ -690,6 +886,57 @@ def step_gains(text):
     return vals if len(vals) == STEPS else None
 
 
+def expand_mini(row, name):
+    """one-bar mini-notation produced by track2strudel.mini_bar -> 16 booleans (None if not understood)."""
+    row = row.strip()
+    if row == "~":
+        return [False] * STEPS
+    m = re.match(rf"^{re.escape(name)}\((\d+),(\d+)\)$", row)
+    if m:
+        k, n = int(m.group(1)), int(m.group(2))
+        if STEPS % n:
+            return None
+        bj = bjorklund(k, n); st = STEPS // n
+        return [bool(bj[i // st]) and i % st == 0 for i in range(STEPS)]
+    m = re.match(r"^\[(.*)\]\*(\d+)$", row) or re.match(rf"^({re.escape(name)})\*(\d+)$", row)
+    toks = (m.group(1).split() * int(m.group(2))) if m else row.split()
+    if not toks or STEPS % len(toks) or any(t not in (name, "~") for t in toks):
+        return None
+    st = STEPS // len(toks)
+    return [toks[i // st] == name and i % st == 0 for i in range(STEPS)]
+
+
+def add_steps(new, name, add, drop=()):
+    """add the 16ths `add` to (and remove `drop` from) every one-bar row of a lane block (pick rows or one pattern)."""
+    def fix(row):
+        h = expand_mini(row, name)
+        if h is None:
+            return None
+        return mini_bar([(x or (i in add)) and i not in drop for i, x in enumerate(h)], name)
+    out, ok = [], True
+    for l in new:
+        m = re.match(r'^(\s*(?://\s*)?\s+)"([^"]*)",(\s*//.*)?$', l)
+        m1 = re.match(r'^((?://\s*)?\$: s\(")([^"<]*)("\))(.*)$', l)
+        if m:
+            r = fix(m.group(2)); ok &= r is not None
+            out.append(f'{m.group(1)}"{r if r is not None else m.group(2)}",{m.group(3) or ""}')
+        elif m1 and "pick" not in l:
+            r = fix(m1.group(2)); ok &= r is not None
+            out.append(f"{m1.group(1)}{r if r is not None else m1.group(2)}{m1.group(3)}{m1.group(4)}")
+        else:
+            out.append(l)
+    return out, ok
+
+
+def fmt_gain(x):
+    """0.5 -> '.5', 1.0 -> '1', 0.034 -> '.034' (3 significant decimals under .1), 0 -> '0'."""
+    if x <= 0:
+        return "0"
+    t = f"{x:.2f}" if x >= 0.1 else f"{x:.3f}"
+    t = t.rstrip("0").rstrip(".")
+    return t[1:] if t.startswith("0.") else t
+
+
 def mean_gain(text, steps=None):
     """pattern gain the lane's level refers to: weighted by the 16ths of the hits the level was measured on."""
     sg = step_gains(text)
@@ -757,7 +1004,8 @@ def code_blocks(lines):
     return items
 
 
-def samples_code(code, prefix, levels, pitched_ok, loops=None, nudges=None, sections=None, level_steps=None, pitched_pg=None):
+def samples_code(code, prefix, levels, pitched_ok, loops=None, nudges=None, sections=None, level_steps=None, pitched_pg=None,
+                 folded=None, step_gains_new=None):
     """<slug>.strudel.js -> <slug>.samples.strudel.js: same patterns, extracted sounds.
     postgain = level of the lane in the stems / (normalised peak * pattern gain), so the
     lanes keep the balance they have in the original mix (stems sum to the mix)."""
@@ -785,6 +1033,37 @@ def samples_code(code, prefix, levels, pitched_ok, loops=None, nudges=None, sect
                 new = [re.sub(r'"[^"]*"', lambda mm: re.sub(rf"\b{sym}\b", f"{prefix}_{lane}", mm.group(0)), l)
                        .replace('.bank("RolandTR909")', "") for l in blk]
                 p = pg[lane] / mean_gain(text, (level_steps or {}).get(lane))
+                if lane in (folded or {}):
+                    out.append(f"//   {folded[lane]}")
+                sg = (step_gains_new or {}).get(lane)
+                if sg:
+                    # v2.4: fitted per-16th gains (relative to the loudest 16th) + postgain from the same fit
+                    rel = dict(sg["rel"])
+                    drop = {i for i, v in rel.items() if v < MIN_STEP_GAIN}
+                    if (sg.get("add") or drop) and not (sg.get("explained") is not None and sg["explained"] < MIN_EXPLAINED):
+                        new2, ok = add_steps(new, f"{prefix}_{lane}", set(sg.get("add") or {}), drop)
+                        if ok:
+                            new = new2; rel.update(sg.get("add") or {})
+                            if sg.get("add"):
+                                out.append(f"//   {lane}: 16ths {sorted(sg['add'])} added (the audio holds this lane there at "
+                                           + ", ".join(f"{sg['add'][i]:.2f}" for i in sorted(sg["add"])) + " of its loudest 16th; ADTOF missed them)")
+                            if drop:
+                                out.append(f"//   {lane}: 16ths {sorted(drop)} removed (ADTOF hits the audio fit puts under {MIN_STEP_GAIN} of the loudest 16th)")
+                    gstr = " ".join(fmt_gain(rel.get(i, 0.0)) for i in range(STEPS))
+                    new = [re.sub(r'\.gain\("[^"]*"\)|\.gain\([\d.]+\)', "", l) for l in new]
+                    new[-1] += f'.gain("{gstr}")'
+                    # level from the same fit (agrees with the v2.3 attack-energy calibration within 0.3 dB when the fit
+                    # is clean); a fit > 6 dB under the v2.3 level (dense overlapping 16ths, wrong template) keeps the v2.3 one
+                    if sg["postgain"] >= p / 2:
+                        p = sg["postgain"]
+                    else:
+                        out.append(f"//   {lane}: fitted level {20 * np.log10(sg['postgain'] / p):+.1f} dB vs the v2.3 calibration: v2.3 level kept")
+                    out.append(f"//   {lane}: .gain = per-16th level fitted on the audio (NNLS of the band envelope, "
+                               f"{sg['n_bars']} bars; 1 = loudest 16th); explains {100 * (sg.get('explained') or 0):.0f} % of the band energy")
+                    if sg.get("explained") is not None and sg["explained"] < MIN_EXPLAINED and sg.get("plays_frac", 0) >= 0.75                             and not os.environ.get("T2S_NO_DROP"):
+                        out.append(f"//   {lane}: plays in {100 * sg['plays_frac']:.0f} % of the bars but explains < {100 * MIN_EXPLAINED:.0f} % of its "
+                                   f"band once the other lanes are fitted (ADTOF hits = decay / bleed of other lanes) -> left commented")
+                        com = True
                 sec = (sections or {}).get(lane)
                 if sec:
                     new[-1] += f'.n("<{rle([str(x) for x in sec["seq"]])}>")'
@@ -792,6 +1071,8 @@ def samples_code(code, prefix, levels, pitched_ok, loops=None, nudges=None, sect
                                f"{prefix}_{lane}:0 = bars {'before' if sec['main'] == 'before' else 'from'} it, :1 = the other side, "
                                f":2 = all hits")
                 new[-1] += f".postgain({p:.2f})"
+                if com:
+                    new = [l if l.startswith("//") else "// " + l for l in new]
                 pick_rows = [i for i, l in enumerate(new) if re.match(r'^(// )?\s+"[^"]*",\s*//', l)]
                 if pick_rows:   # re-align the variant comments after the longer sample names
                     w = max(len(re.match(r'^(.*",)', new[i]).group(1)) for i in pick_rows) + 2
@@ -804,6 +1085,10 @@ def samples_code(code, prefix, levels, pitched_ok, loops=None, nudges=None, sect
         if m and len(blk) >= 2:
             nxt = blk[1]
             kd = "bass" if "sawtooth" in nxt else "lead" if "square" in nxt else None
+            if kd and kd in (folded or {}):
+                out.append(f"//   {folded[kd]}")
+                out += [l if l.startswith("//") else "// " + l for l in blk]
+                continue
             if kd and kd in pitched_ok:
                 sw = re.search(r"\.swingBy\([^)]*\)", nxt)
                 vel = re.search(r'\.velocity\("[^"]*"\)', nxt)
@@ -871,7 +1156,14 @@ def main():
 
     meta = dict(slug=slug, prefix=prefix, peak_dbfs=-1.0, code_offset_ms=round(steps[2] * 1000, 2), drums={}, bass={}, lead={})
     manifest = {}
-    drums, _ = extract_drums(out, an, y, grid, bar0, step_s, steps)
+    tile = four_on_floor(an) and not os.environ.get("T2S_NO_TILE")
+    rr = rumble_info(out, an, steps) if not os.environ.get("T2S_NO_RUMBLE") else None
+    rumble, kick_extra = (rr if rr else (None, None))
+    meta["kick_tiled"] = tile; meta["rumble"] = rumble
+    if rumble:
+        log(f"  rumble: bass stem per-beat coherence {rumble['beat_coherence']} (< 400 Hz, {rumble['bass_vs_drums_lt400_db']:+.1f} dB vs drums)"
+            + (" -> folded into the kick one-shot" if rumble["folded"] else " -> kept as a bass lane"))
+    drums, _ = extract_drums(out, an, y, grid, bar0, step_s, steps, kick_extra=kick_extra, tile_kick=tile)
     emitted = set(an["lanes"])
     levels, sections = {}, {}
     for k, r in drums.items():
@@ -890,10 +1182,23 @@ def main():
             f"sim v0 {r['similarity']['variant0_vs_hits_median']:.3f} ({r['similarity']['vs']})"
             + (f"\n          method scores {r['method_scores']}" if r.get("method_scores") else ""))
 
+    step_gains_new = {}
+    if not os.environ.get("T2S_NO_STEPFIT"):
+        for k, f in fit_step_gains(an, y, steps, {k: r for k, r in drums.items() if k in emitted}).items():
+            v0 = drums[k]["variants"][0]; gm = f["max_raw"]
+            step_gains_new[k] = dict(rel={i: g / gm for i, g in f["gain_raw"].items()}, n_bars=f["n_bars"], add=f.get("add") or {},
+                                     postgain=float(np.abs(v0).max()) / PEAK * gm, explained=f["explained"],
+                                     plays_frac=f.get("plays_frac", 0.0))
+            meta["drums"][k]["step_gain_fit"] = {str(i): round(g / gm, 3) for i, g in f["gain_raw"].items()}
+            log(f"  {k:<5} per-16th gains (fit): " + " ".join(f"{i}:{g / gm:.2f}" for i, g in sorted(f["gain_raw"].items()))
+                + f"  postgain {step_gains_new[k]['postgain']:.2f} (v2.3 formula {levels[k] / PEAK:.2f} / mean gain)"
+                + f"  explained energy {f['explained']}" + (f"  added 16ths {f['add']}" if f.get("add") else ""))
     pitched_ok, nudges, pitched_pg = set(), {}, {}
     tun = an.get("tuning", {})
     for kind, stem, mid, fmin, fmax in (("bass", "bass", "bass.mid", 30, 400), ("lead", "other", "lead.mid", 70, 2100)):
         if kind not in an["lanes"]:
+            continue
+        if kind == "bass" and rumble and rumble["folded"]:
             continue
         lp = [p for row in an["lanes"][kind]["pitches"] for p in row if p >= 0]
         rows = an["lanes"][kind]["pitches"]; Lr = len(rows)
@@ -958,8 +1263,24 @@ def main():
     log(f"  manifest: {sdir / 'strudel.json'}")
     if not a.no_code:
         code = (out / f"{slug}.strudel.js").read_text(encoding="utf-8")
+        folded = {"bass": f"bass = kick rumble (bass stem repeats every beat, coherence {rumble['beat_coherence']}): "
+                           f"folded into the {prefix}_kick one-shot (cut from drums + bass < 400 Hz), note line kept as a comment"}             if rumble and rumble["folded"] else {}
+        if meta.get("kick_tiled"):
+            folded["kick"] = ("kick one-shot = exactly 1 beat (4-on-the-floor: consecutive hits tile into the continuous tail"
+                              + (" + rumble from the bass stem" if folded.get("bass") else "") + ")")
         sc = samples_code(code, prefix, levels, pitched_ok, loops, nudges, sections,
-                          {k: r.get("level_steps") for k, r in drums.items()}, pitched_pg)
+                          {k: r.get("level_steps") for k, r in drums.items()}, pitched_pg, folded=folded,
+                          step_gains_new=step_gains_new)
+        # v2.4: the stems sum to the mix only up to a gain (Demucs output ~0.8-1.3 dB under the mix on the refs, the
+        # residual is mostly a scaled copy): every postgain is scaled by the LS gain mix / sum(stems)
+        sg_ = stem_mix_gain(out)
+        meta["stem_to_mix_gain_db"] = round(20 * np.log10(sg_), 2)
+        (tdir / "meta.json").write_text(json.dumps(meta, indent=1, default=float), encoding="utf-8")
+        if abs(20 * np.log10(sg_)) >= 0.2 and not os.environ.get("T2S_NO_MIXGAIN"):
+            sc = re.sub(r"\.postgain\(([\d.]+)\)", lambda mm: f".postgain({float(mm.group(1)) * sg_:.2f})", sc)
+            sc = sc.replace("samples('" + SERVER, f"// postgains include the stems -> mix gain ({20 * np.log10(sg_):+.2f} dB, Demucs level)\n"
+                            + "samples('" + SERVER, 1)
+            log(f"  stems -> mix gain {20 * np.log10(sg_):+.2f} dB applied to every postgain")
         (out / f"{slug}.samples.strudel.js").write_text(sc, encoding="utf-8")
         log(f"  code: {out / (slug + '.samples.strudel.js')}")
 
