@@ -75,3 +75,41 @@ fusionnés (comptes × poids), BPM/tonalité pris de la ref dominante.
 
 Transcription basse/lead imparfaite (basic-pitch) → la DNA mélodique est approximative ; pas de glide ; pas de
 reverb hors ligne (`room` muet) ; pas de sidechain fiable hors ligne (simulé par enveloppe de gain sur la basse).
+
+## 6. v2 (retours de Jo sur v1 : intro trop longue, « plat », « pas de basse »)
+
+**Basse (priorité)**
+- `dna.py` ajoute un bloc `audio` (les champs v1 restent identiques) : rythme de la basse et du stem « other » mesuré
+  sur l'**audio** des stems (enveloppe RMS 30-400 Hz / 300-5000 Hz par 1/64, flux positif → onsets par 16e,
+  `p_onset`, `templates`, `env64`) + `balance` = part des bandes 40-150 / 150-400 / 150-800 Hz du mix et du stem basse
+  dans les sections main. La transcription basic-pitch ne voyait que 2,6 notes/mesure ; l'audio en voit ~4,8.
+- Rythme : ancres d'un template DNA + 2-3 croches à contretemps (2/6/10/14) + remplissage pondéré
+  `0.45 × prior tech-house + 0.35 × p_onset audio + 0.2 × p_onset midi` → 4-8 notes/mesure ; ghosts 16e
+  (vélocité .62), sauts d'octave, temps forts laissés au kick (vélocité .5). Boucle A + variation V (2 mesures,
+  garde-fou nouveauté pour chacune).
+- Son : 3 couches — sub `sine` lpf 200 (mono), corps `sawtooth` lpf+env (**pas de `ftype('ladder')` : hors ligne il
+  tue tout au-dessus de ~120 Hz**, cause du « pas de basse » v1) + `.shape(.5)` hpf 110, octave `square` discrète ;
+  kit inspi : sub sine + sample `gww_bass` saturé.
+- Sidechain simulé (vérifié hors ligne) : `.postgain(PUMP)` par 16e (`[.32 .69 1 .95]*4`, profondeur selon l'énergie)
+  + `.attack(ATT)` plus lente sur les 16e du kick ; aussi sur hook et vox.
+- Kit own : sub-kick `sine` accordé sur la tonique avec `.penv(24).pdecay(.045)` sous le 909 (le 909 seul vit à
+  80-200 Hz → son « plat »).
+
+**Arrangement** : `PLAN` = liste `[section, [cases de 4 mesures]]`, chaque case = jetons de couches
+(`K C H O P S B b V Y y W X D R M`, légende dans le code). Intro `--intro-bars` (16) : kick → hats → perc + basse
+filtrée (mesure 9) → clap ; basse ouverte mesure 17, hook mesure 25 (~47 s). Ensuite groove / mini-break 8 / grooveB /
+break 16 + rise 8 / drop / groove2 / outro `--outro-bars` (16) batterie seule (kick+hats à la fin). Dans les sections
+main, `evolve()` applique 1 opération de couche toutes les 8 mesures, 2 toutes les 16, et un mini-break `M` (dernière
+mesure sans kick/basse + roll de clap) en fin de phrase de 16 ; filtre basse en triangle sur 16 mesures. Contrôle :
+`report.arrangement_checks.longest_static_bars` (≤ 16 exigé, 8 obtenu).
+
+**Nouvelles couches** : hook (accord, densité ×2 vs stab v1, rythme = DNA lead + `audio.other`, son tiré au seed :
+pluck / organ / stab ; kit inspi `gww_lead`), variation W ; kit inspi : `gww_voxchop` re-séquencés (16e, stutter) en
+groove et tranches `gww_vox` (`.slice(8, …)`) en break ; kit own : pluck « vocal » `sawtooth` + `.vowel()`, pentatonique.
+Impacts (crash 909 / bruit blanc) toutes les 16 mesures, pans, delays 3/16.
+
+**Mastering** (numpy/scipy, `master()`) : rendu brut (gains du code) → glue comp 2:1 stéréo-liée (détecteur RMS,
+sidechain HPF 120 Hz, knee 6 dB, att 20 ms / rel 200 ms) → gain → soft clip tanh → limiteur lookahead 5 ms
+(rel 80 ms) ; itère le gain jusqu'à −9 LUFS intégrés (BS.1770, K-weighting recalculé pour 44,1 kHz) et true-peak
+(sur-échantillonnage ×4) ≤ −1 dBFS. Le `(premaster).wav` (crête −1 dBFS) est gardé. Mesures dans `report.json`
+(`premaster`, `master`, `bass_metrics` via un rendu du stem basse seul, `reference`).

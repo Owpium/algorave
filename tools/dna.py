@@ -125,6 +125,72 @@ def hat_openness(drums_wav, hh_times):
     return np.array(out)
 
 
+def _band(x, sr, lo, hi):
+    from scipy.signal import butter, sosfiltfilt
+    if lo <= 0:
+        return sosfiltfilt(butter(4, hi, btype="low", fs=sr, output="sos"), x)
+    return sosfiltfilt(butter(4, [lo, hi], btype="band", fs=sr, output="sos"), x)
+
+
+def stem_rhythm(wav, d0, st, nbars, lo, hi, active=None):
+    """v2: rhythm of a stem from the AUDIO (not the transcription, which misses ghost notes / short hits).
+    Envelope = RMS of the band-passed stem per 1/64 note; onsets = positive log-envelope flux per 16th.
+    -> p_onset[16], env64 (mean normalised envelope over a bar: note lengths + pumping shape),
+       templates (most common 16-step onset grids), onsets per bar."""
+    if not Path(wav).exists():
+        return None
+    y, sr = sf.read(str(wav), dtype="float32")
+    y = _band(y.mean(1) if y.ndim == 2 else y, sr, lo, hi)
+    hop = st / 4
+    env = np.zeros(nbars * 64)
+    for k in range(nbars * 64):
+        a, z = int((d0 + k * hop) * sr), int((d0 + (k + 1) * hop) * sr)
+        if a >= 0 and z <= len(y) and z > a:
+            env[k] = np.sqrt(np.mean(y[a:z] ** 2) + 1e-12)
+    E = env.reshape(nbars, 64)
+    bl = 20 * np.log10(E.mean(1) + 1e-9)
+    act = bl > np.percentile(bl, 90) - 12
+    if active is not None:
+        act &= active
+    if act.sum() < 4:
+        return None
+    M = E[act] / (E[act].max(1, keepdims=True) + 1e-12)
+    lg = np.log(E + 1e-6)
+    fl = np.maximum(0, np.diff(np.concatenate([lg[:, :1], lg], 1), axis=1))
+    F = fl.reshape(nbars, 16, 4).max(2)[act]
+    on = F > max(float(np.percentile(F, 70)), 0.5)
+    tm = Counter("".join("x" if v else "." for v in r) for r in on)
+    templates = [{"onsets": [int(c == "x") for c in k], "count": int(v)} for k, v in tm.most_common(10) if v >= 2]
+    return {"bars_active": int(act.sum()), "p_onset": on.mean(0).round(3).tolist(),
+            "onsets_per_bar": round(float(on.sum(1).mean()), 2), "env64": M.mean(0).round(3).tolist(),
+            "templates": templates}
+
+
+def band_balance(mix_wav, bass_wav, d0, st, bars):
+    """v2: spectral balance of the mix in the given bars (fraction of the mix power, dB) + bass stem share
+    40-150 / 150-400 / 150-800 Hz ('small-speaker audibility' proxy) and mix loudness (RMS dBFS)."""
+    if not Path(mix_wav).exists() or not bars:
+        return None
+    from scipy.signal import welch
+    y, sr = sf.read(str(mix_wav), dtype="float32")
+    y = y.mean(1) if y.ndim == 2 else y
+    b = sf.read(str(bass_wav), dtype="float32")[0] if Path(bass_wav).exists() else None
+    if b is not None:
+        b = b.mean(1) if b.ndim == 2 else b
+    seg = lambda x: np.concatenate([x[max(0, int((d0 + k * 16 * st) * sr)):int((d0 + (k + 1) * 16 * st) * sr)] for k in bars])
+    f, P = welch(seg(y), sr, nperseg=8192)
+    tot = P.sum()
+    db = lambda p: round(float(10 * np.log10(p / tot + 1e-12)), 2)
+    out = {"mix_rms_dbfs": round(float(10 * np.log10(np.mean(seg(y) ** 2) + 1e-12)), 2),
+           "mix_40_150": db(P[(f >= 40) & (f < 150)].sum()), "mix_150_400": db(P[(f >= 150) & (f < 400)].sum()),
+           "mix_150_800": db(P[(f >= 150) & (f < 800)].sum())}
+    if b is not None:
+        fb, Pb = welch(seg(b), sr, nperseg=8192)
+        out.update({"bass_40_150": db(Pb[(fb >= 40) & (fb < 150)].sum()), "bass_150_400": db(Pb[(fb >= 150) & (fb < 400)].sum()),
+                    "bass_150_800": db(Pb[(fb >= 150) & (fb < 800)].sum()), "bass_total": db(Pb.sum())})
+    return out
+
+
 # ---------------------------------------------------------------- per-reference analysis
 def analyse_ref(slug):
     d = ROOT / "out" / slug
@@ -437,8 +503,15 @@ def build(refs, name):
         bst, bfp = pitched_stats(R["bass"], R["tonic"], R["nbars"], R["act"]["bass"])
         lst, lfp = pitched_stats(R["lead"], R["tonic"], R["nbars"], R["act"]["other"])
         arr, hat = arrangement(R, secs)
+        # v2: audio rhythm of the bass / other stems + spectral balance of the main sections
+        stems = ROOT / "out" / slug / "stems"
+        main_bars = [b for s in secs if s["type"] == "main" for b in range(*s["bars"])]
+        mb = np.zeros(R["nbars"], bool); mb[main_bars] = True
+        audio = {"bass": stem_rhythm(stems / "bass.wav", R["d0"], R["st"], R["nbars"], 30, 400, mb),
+                 "other": stem_rhythm(stems / "other.wav", R["d0"], R["st"], R["nbars"], 300, 5000, mb),
+                 "balance": band_balance(ROOT / "out" / slug / "excerpt.wav", stems / "bass.wav", R["d0"], R["st"], main_bars)}
         per.append(dict(slug=slug, w=w, R=R, lanes=lanes, dstats=dstats, bass=bst, lead=lst, arr=arr, hat=hat,
-                        fp={"bass": bfp, "lead": lfp}))
+                        fp={"bass": bfp, "lead": lfp}, audio=audio))
         log(f"  {R['an']['bpm']} BPM, {R['an']['key']}, {R['nbars']} bars, sections:",
             " ".join(f"{s['type']}{s['len']}" for s in secs))
     main = max(per, key=lambda p: p["w"])
@@ -462,6 +535,18 @@ def build(refs, name):
         # literal source loops as root-relative pitch-class tokens (-1 = rest): novelty guard only
         "source_fingerprints": {k: [fp for p in per for fp in p["fp"][k]] for k in ("bass", "lead")},
     }
+    # v2 (appended so the v1 fields stay identical): audio rhythms + spectral balance
+    dna["audio"] = {}
+    for k in ("bass", "other"):
+        items = [(w, p["audio"][k]) for w, p in W if p["audio"][k]]
+        if items:
+            m = {f: wavg([(w, x[f]) for w, x in items]) for f in ("p_onset", "onsets_per_bar", "env64")}
+            Wt = sum(w for w, _ in items)
+            m["templates"] = sorted([dict(t, count=round(t["count"] * w / Wt, 3)) for w, x in items for t in x["templates"]],
+                                    key=lambda t: -t["count"])[:12]
+            dna["audio"][k] = m
+    dna["audio"]["balance"] = wavg([(w, p["audio"]["balance"]) for w, p in W])
+    dna["version"] = 2
     return dna
 
 
