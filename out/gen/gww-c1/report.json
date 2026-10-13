@@ -1,0 +1,140 @@
+{
+ "name": "gww-c1",
+ "params": {
+  "dna": "gww",
+  "name": "gww-c1",
+  "bpm": 123.0,
+  "key": "10A",
+  "seed": 11,
+  "energy": 0.75,
+  "length_min": 6.0,
+  "kit": "both",
+  "no_render": false
+ },
+ "bpm": 123,
+ "key": "Bm",
+ "camelot": "10A",
+ "bars": 184,
+ "minutes": 5.98,
+ "sections": [
+  [
+   "intro",
+   8
+  ],
+  [
+   "intro2",
+   8
+  ],
+  [
+   "intro3",
+   16
+  ],
+  [
+   "build",
+   16
+  ],
+  [
+   "groove",
+   32
+  ],
+  [
+   "break",
+   16
+  ],
+  [
+   "rise",
+   8
+  ],
+  [
+   "drop",
+   24
+  ],
+  [
+   "groove2",
+   24
+  ],
+  [
+   "outro",
+   16
+  ],
+  [
+   "outro2",
+   8
+  ],
+  [
+   "outro3",
+   8
+  ]
+ ],
+ "novelty": {
+  "bass": {
+   "min_bar_dist": 0.75,
+   "min_2bar_dist": 0.857,
+   "min_bar_onset_dist": 0.0,
+   "min_2bar_onset_dist": 0.286,
+   "tries": 6,
+   "ok": true,
+   "rhythm_ok": true
+  },
+  "stab": {
+   "min_bar_dist": 0.75,
+   "min_2bar_dist": 0.867,
+   "min_bar_onset_dist": 0.5,
+   "min_2bar_onset_dist": 0.636,
+   "tries": 1,
+   "ok": true,
+   "rhythm_ok": true
+  },
+  "threshold": 0.4
+ },
+ "dna_fit": {
+  "drums": {
+   "kick": 0.962,
+   "clap": 0.978,
+   "hh": 0.877
+  },
+  "bass": {
+   "onset_fit": 0.832,
+   "source_onset_fit": 0.807,
+   "interval_likelihood": 0.266,
+   "in_vocab": 1.0
+  },
+  "stab": {
+   "onset_fit": 0.586
+  }
+ },
+ "renders": {
+  "own": {
+   "wav": "out\\gen\\gww-c1\\gww-c1 - 123bpm - 10A.wav",
+   "render": {
+    "cps": 0.5125,
+    "chunks": 23,
+    "raw_peak": 1.594
+   },
+   "check": {
+    "sr": 44100,
+    "subtype": "PCM_16",
+    "seconds": 359.02,
+    "peak_dbfs": -1.0,
+    "clipped_samples": 0
+   },
+   "errors": []
+  },
+  "inspi": {
+   "wav": "out\\gen\\gww-c1\\gww-c1 - 123bpm - 10A (inspi).wav",
+   "render": {
+    "cps": 0.5125,
+    "chunks": 23,
+    "raw_peak": 1.61
+   },
+   "check": {
+    "sr": 44100,
+    "subtype": "PCM_16",
+    "seconds": 359.05,
+    "peak_dbfs": -1.0,
+    "clipped_samples": 0
+   },
+   "errors": []
+  }
+ }
+}

@@ -1,0 +1,124 @@
+{
+ "name": "gww-mix-c3",
+ "params": {
+  "dna": "gww_mix",
+  "name": "gww-mix-c3",
+  "bpm": 124.0,
+  "key": "9A",
+  "seed": 33,
+  "energy": 0.6,
+  "length_min": 6.0,
+  "kit": "own",
+  "no_render": false
+ },
+ "bpm": 124,
+ "key": "Em",
+ "camelot": "9A",
+ "bars": 184,
+ "minutes": 5.94,
+ "sections": [
+  [
+   "intro",
+   8
+  ],
+  [
+   "intro2",
+   8
+  ],
+  [
+   "intro3",
+   16
+  ],
+  [
+   "build",
+   16
+  ],
+  [
+   "groove",
+   32
+  ],
+  [
+   "break",
+   16
+  ],
+  [
+   "rise",
+   8
+  ],
+  [
+   "drop",
+   24
+  ],
+  [
+   "groove2",
+   24
+  ],
+  [
+   "outro",
+   16
+  ],
+  [
+   "outro2",
+   8
+  ],
+  [
+   "outro3",
+   8
+  ]
+ ],
+ "novelty": {
+  "bass": {
+   "min_bar_dist": 0.5,
+   "min_2bar_dist": 0.667,
+   "min_bar_onset_dist": 0.0,
+   "min_2bar_onset_dist": 0.286,
+   "tries": 1,
+   "ok": true,
+   "rhythm_ok": true
+  },
+  "stab": {
+   "min_bar_dist": 0.6,
+   "min_2bar_dist": 0.727,
+   "min_bar_onset_dist": 0.4,
+   "min_2bar_onset_dist": 0.625,
+   "tries": 1,
+   "ok": true,
+   "rhythm_ok": true
+  },
+  "threshold": 0.4
+ },
+ "dna_fit": {
+  "drums": {
+   "kick": 0.968,
+   "clap": 0.98,
+   "hh": 0.783
+  },
+  "bass": {
+   "onset_fit": 0.782,
+   "source_onset_fit": 0.646,
+   "interval_likelihood": 0.333,
+   "in_vocab": 1.0
+  },
+  "stab": {
+   "onset_fit": 0.602
+  }
+ },
+ "renders": {
+  "own": {
+   "wav": "out\\gen\\gww-mix-c3\\gww-mix-c3 - 124bpm - 9A.wav",
+   "render": {
+    "cps": 0.5166666666666667,
+    "chunks": 23,
+    "raw_peak": 1.518
+   },
+   "check": {
+    "sr": 44100,
+    "subtype": "PCM_16",
+    "seconds": 356.13,
+    "peak_dbfs": -1.0,
+    "clipped_samples": 0
+   },
+   "errors": []
+  }
+ }
+}

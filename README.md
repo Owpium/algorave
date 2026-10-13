@@ -31,6 +31,20 @@ npm install --ignore-scripts
 Utilisation : voir [tools/track2strudel_README.md](tools/track2strudel_README.md), par ex.
 `.venv\Scripts\python.exe tools\track2strudel.py "refs\track.mp3" --out out\slug --samples`.
 
+## Générateur « style DNA » (morceaux nouveaux inspirés d'une ref)
+
+Design : [docs/generator-design.md](docs/generator-design.md).
+
+```powershell
+# 1. DNA (stats de style) d'une ou plusieurs refs analysées (dossiers out\<slug>\), avec poids
+.venv\Scripts\python.exe tools\dna.py --ref groove_with_it_wav_full:1 --name gww
+# 2. Morceau nouveau : code Strudel live + WAV "<nom> - <BPM>bpm - <Camelot>.wav" dans out\gen\<nom>\
+.venv\Scripts\python.exe tools\generate.py --dna gww --name gww_c1 --seed 11 --key 10A --energy 0.75 --kit both
+```
+`--kit own` = sons libres (banques Strudel TR-909/808 + synthés), publiable ; `--kit inspi` = samples extraits
+de la ref (écoute perso uniquement, nécessite `samples\`). Garde-fou : la basse et le stab générés sont comparés
+à toutes les boucles 1-2 mesures de la source (rapport `report.json`).
+
 ## Non versionné (copyright)
 
 Les morceaux de référence (`refs/`), les samples découpés (`samples/`, `out/**/samples/`), les stems,
