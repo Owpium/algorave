@@ -42,6 +42,7 @@ from scipy.signal import butter, sosfiltfilt, hilbert
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from track2strudel import Grid, STEPS, LANES, midi_name, derive_prefix, vel_pattern, rle, mini_bar, bjorklund  # noqa: E402
 import extract_loops  # noqa: E402
+import acid_lane  # noqa: E402  (v2.5 filter-swept synth lane of the 'other' stem)
 from t2s_params import P as TP  # noqa: E402  (hand-tuned thresholds, env T2S_PARAMS)
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -1134,6 +1135,24 @@ def samples_code(code, prefix, levels, pitched_ok, loops=None, nudges=None, sect
     return "\n".join(out) + "\n"
 
 
+def insert_acid(sc, block, prefix):
+    """acid lane block right after the 'other' loop block (else before the vox block, else at the end)."""
+    lines = sc.splitlines()
+    at = None
+    for i, ln in enumerate(lines):
+        if ln.startswith("// other:") or ln.startswith("// vox:"):
+            at = i
+            if ln.startswith("// other:"):
+                j = i + 1
+                while j < len(lines) and lines[j].strip():
+                    j += 1
+                at = j + 1
+            break
+    if at is None:
+        return sc.rstrip("\n") + "\n\n" + "\n".join(block) + "\n"
+    return "\n".join(lines[:at] + block + [""] + lines[at:]) + "\n"
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("out")
@@ -1257,6 +1276,10 @@ def main():
                         f"variants {[(v['start_s'], v['members']) for v in r['variants']]}")
                 else:
                     log(f"  vox (full track {fd.name}): {r.get('status')} {r.get('mode', '')} active {r['n_active']} -> not used")
+    # v2.5: filter-swept pitched synth ("acid / HF synth") of the 'other' stem -> symbolic lane (T2S_NO_ACID to disable)
+    acid = acid_lane.acid_lane(out, an, prefix, meta.get("other_loop"))
+    meta["acid"] = acid
+    log(f"  acid  {acid['status']}")
     meta["levels"] = levels
     tdir.mkdir(parents=True, exist_ok=True)
     (tdir / "meta.json").write_text(json.dumps(meta, indent=1, default=float), encoding="utf-8")
@@ -1282,6 +1305,8 @@ def main():
             sc = sc.replace("samples('" + SERVER, f"// postgains include the stems -> mix gain ({20 * np.log10(sg_):+.2f} dB, Demucs level)\n"
                             + "samples('" + SERVER, 1)
             log(f"  stems -> mix gain {20 * np.log10(sg_):+.2f} dB applied to every postgain")
+        if acid.get("emit"):   # after the postgain scaling: its per-bar .postgain pattern carries the stems -> mix gain itself
+            sc = insert_acid(sc, acid_lane.code(acid, sg_ if abs(20 * np.log10(sg_)) >= 0.2 and not os.environ.get("T2S_NO_MIXGAIN") else 1.0), prefix)
         (out / f"{slug}.samples.strudel.js").write_text(sc, encoding="utf-8")
         log(f"  code: {out / (slug + '.samples.strudel.js')}")
 

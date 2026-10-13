@@ -190,7 +190,7 @@ def pipeline(audio, out, start=None, dur=None, prefix=None, force=False, synth=F
     # 5. samples + loops (extract_samples -> extract_loops)
     an = json.loads((out / "analysis.json").read_text(encoding="utf-8"))
     pfx = prefix or an.get("prefix")
-    k_smp = sha("samples", k_code, fhash(TOOLS / "extract_samples.py", TOOLS / "extract_loops.py", out / "analysis.json"), pfx)
+    k_smp = sha("samples", k_code, fhash(TOOLS / "extract_samples.py", TOOLS / "extract_loops.py", TOOLS / "acid_lane.py", out / "analysis.json"), pfx)
     smp_js = out / f"{slug}.samples.strudel.js"
     if not force and c.get("samples") == k_smp and smp_js.exists() and (ROOT / "samples" / slug / "meta.json").exists():
         tm["samples"] = "cached"

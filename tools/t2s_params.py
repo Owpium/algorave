@@ -54,6 +54,17 @@ PARAMS = {
     "LOOP_VOX_MIN_DB": Param(-24.0, -32.0, -18.0, "extract_loops", "vox bar active if stem RMS vs mix > this (dB)"),
     "LOOP_OTHER_MIN_DB": Param(-26.0, -34.0, -18.0, "extract_loops", "other bar active if stem RMS vs mix > this (dB)"),
     "LOOP_OTHER_QUIET_DB": Param(-36.0, -44.0, -28.0, "extract_loops", "same, when basic-pitch found a consistent pitched loop"),
+    # --- acid_lane.py (v2.5, called by extract_samples)
+    "ACID_MIN_SWEEP_DB": Param(8.0, 4.0, 16.0, "acid_lane", "acid lane: per-bar brightness (1.5-8k vs 0.2-1.5k) p90-p10 of the 'other' stem on the note steps (dB)"),
+    "ACID_MIN_BRIGHT_DB": Param(-15.0, -25.0, -5.0, "acid_lane", "acid lane: p75 of the per-bar brightness must reach this (filter really opens) [refs: co -5.7, others <= -21]"),
+    "ACID_MIN_BARS": Param(8, 4, 16, "acid_lane", "acid lane: active bars needed"),
+    "ACID_RANGE_DB": Param(24.0, 12.0, 36.0, "acid_lane", "acid lane: bar active if its note-step level >= loudest bar - this (dB)"),
+    "ACID_STEP_MIN_SHARE": Param(0.25, 0.1, 0.6, "acid_lane", "acid lane: 16th kept if lead.mid has an onset there in >= this share of the bars"),
+    "ACID_ALWAYS_SHARE": Param(0.7, 0.4, 0.95, "acid_lane", "acid lane: 16th played in every bar if lead.mid has it in >= this share (else only where found)"),
+    "ACID_CHORD_MIN": Param(0.6, 0.3, 0.9, "acid_lane", "acid lane: third / fifth added to the root if its chroma >= this x the max"),
+    "ACID_LPQ": Param(28.0, 5.0, 40.0, "acid_lane", "acid voice: ladder resonance (.lpq)"),
+    "ACID_LPENV": Param(2.0, 0.0, 4.0, "acid_lane", "acid voice: filter envelope depth (.lpenv, octaves)"),
+    "ACID_DISTORT": Param(3.0, 0.0, 6.0, "acid_lane", "acid voice: .distort amount"),
 }
 
 

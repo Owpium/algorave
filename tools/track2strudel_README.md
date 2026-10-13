@@ -40,6 +40,26 @@ python tools\t2s_params.py                                         # liste des c
   `T2S_PARAMS="NOM=VAL,..."` / `T2S_PARAM_NOM=VAL` (transmis aux sous-processus). Les switches `T2S_NO_*` restent.
 - Anciens scripts (track2strudel_v1.py, run_v2*.sh) : `tools\_archive\`.
 
+## v2.5 (2026-10) - acid / HF synth lane (`tools\acid_lane.py`, called by extract_samples)
+- **What**: a pitched part of the 'other' stem whose filter opens / closes from bar to bar. The 1-bar 'other' loop
+  replays one timbre (per-bar level only), so the sweep was lost (Contradiction: the C stab on 16ths 3-4 / 9 / 13,
+  1.5-8k vs 0.2-1.5k balance from -25 dB (bars 5-9, 25-27) to +3 dB (bars 13-21, 29-31); heard as "the acid" on
+  the original A/B blocks, flat on the Strudel ones).
+- **Detection** (generic, `t2s_params.py`): lead.mid (basic-pitch on the other stem) has a recurring 16th
+  (>= `ACID_STEP_MIN_SHARE` of the bars) AND the stem's per-bar brightness on those 16ths has p90-p10 >=
+  `ACID_MIN_SWEEP_DB` over >= `ACID_MIN_BARS` active bars AND its p75 >= `ACID_MIN_BRIGHT_DB` (the filter really
+  opens: the pads / stabs of the 4 other refs sweep too but stay dark, p75 -21..-25 dB vs -5.7 on Contradiction). `T2S_NO_ACID=1` disables it (A/B).
+- **Lane** (symbolic): `note(...)` 16-step pattern (steps in >= `ACID_ALWAYS_SHARE` of the bars in every bar, rarer
+  ones only where found -> `.pick` variants), chord tones only if the stem chroma holds a third (`ACID_CHORD_MIN`),
+  303-style voice `sawtooth` + `.ftype("ladder")` + `.lpq` / `.lpenv` / `.lpa` / `.lpd` + `.distort`
+  (`ACID_LPQ`, `ACID_LPENV`, `ACID_DISTORT`), `.gain` = per-16th accents, `.lpf("<...>")` = 1 cutoff per bar,
+  `.postgain("<...>")` = 1 level per bar (after the waveshaper: `.gain` / `.velocity` sit before `.distort`, which
+  flattens them). Glide: no portamento on Strudel 1.3 synths -> not rendered.
+- **Fit**: the voice is rendered offline at 16 cutoffs (150-8000 Hz, same pattern); each bar takes the cutoff whose
+  brightness matches (inverted on the rising part of the curve, clamped above the resonance peak), level matched on
+  1.5-8 kHz. Target = the stem minus what the 'other' loop already plays there (power residual on the note 16ths,
+  `T2S_NO_ACID_RESID=1` = whole stem), so the stab is not doubled.
+
 ## v2.4 changes (2026-10) - techno: rumble, ghost hats, missed percs, stem level
 All generic, each one only acts when its condition is detected (env switches to disable them for A/B tests:
 `T2S_NO_RUMBLE`, `T2S_NO_TILE`, `T2S_NO_STEPFIT`, `T2S_NO_ADD`, `T2S_NO_DROP`, `T2S_NO_MIXGAIN`, `T2S_NO_HYBRID`,
