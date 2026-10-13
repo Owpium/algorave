@@ -61,6 +61,7 @@ fusionnés (comptes × poids), BPM/tonalité pris de la ref dominante.
   avec `lpf/lpenv/lpq` (ladder), stab `supersaw` court (`lpenv`, `decay`, `sustain(0)`, `delay`).
 - `inspi` (écoute perso uniquement) : `gww_kick/clap/hh/perc`, `gww_bass` repitché par `note()`, stab sur
   `gww_lead`, chops `gww_voxchop` placés par le générateur.
+- `lib` (publiable si les packs le sont) : one-shots / loops des packs de Jo indexés par `tools/sampleindex.py`, voir §7.
 
 ## 4. Code Strudel produit (vérifié avec @strudel/web 1.3.0 hors ligne)
 
@@ -113,3 +114,48 @@ sidechain HPF 120 Hz, knee 6 dB, att 20 ms / rel 200 ms) → gain → soft clip 
 (rel 80 ms) ; itère le gain jusqu'à −9 LUFS intégrés (BS.1770, K-weighting recalculé pour 44,1 kHz) et true-peak
 (sur-échantillonnage ×4) ≤ −1 dBFS. Le `(premaster).wav` (crête −1 dBFS) est gardé. Mesures dans `report.json`
 (`premaster`, `master`, `bass_metrics` via un rendu du stem basse seul, `reference`).
+
+## 7. Bibliothèque de samples + kit `lib` (tools/sampleindex.py)
+
+**Index** (`scan`, incrémental sur taille + mtime, 7 process) : packs listés dans `PACKS` sous `Music\` (lecture seule ;
+fichiers `._*` AppleDouble, `.DS_Store` et démos mp3 ignorés) → `out/library/index.json` (versionné, texte, pas d'audio).
+Par fichier : format / sr / canaux / durée, crête, RMS, LUFS (BS.1770 de `generate.lufs`, fichiers ≥ 0,4 s), `hit_db`
+(RMS des 100 ms après le pic : sert à égaliser les gains du kit). Analyse à 22,05 kHz mono, 32 s max.
+
+- **One-shot / loop** : indices du nom (`loop`, `bpm`, `one shot`, `solo`…), durée (< 1 s = one-shot), cohérence
+  durée ↔ mesures entières au BPM du nom, nombre d'onsets.
+- **Catégorie** : règles de mots-clés ordonnées (nom de fichier d'abord, puis dossiers du plus profond au moins profond ;
+  le nom du pack est ignoré) × règles audio (centroïde, part < 150 Hz / > 5 kHz, planéité, attaque, décroissance −20 dB,
+  multi-transitoires du clap, saillance pyin). Confiance 0,95 (mot-clé + audio identiques) / 0,88 (même famille) /
+  0,82 (mot-clé ambigu tranché par l'audio : `Clap_Snare`, hats ouverts/fermés) / 0,7 (mot-clé contredit par l'audio) /
+  ≤ 0,6 (audio seul). Loops : `drum_loop` (kick/beat/groove/drum), `top_loop` (hats/perc/clap/ride/shaker, `sub` garde le
+  détail), `full_loop`, sinon catégorie tonale + `kind=loop`.
+- **Musique** : BPM du nom (sinon longueur en mesures entières la plus proche de l'estimation librosa), vérifié si
+  librosa (×½, ×2, ×1,5…) ou la longueur tombe juste ; mesures ; tonalité du nom (`Am`, `Ebmin`, `KeyG#`, `_C`) vérifiée
+  par chroma CQT + Krumhansl (lettre seule sans confirmation = confiance 0,55), sinon chroma ; one-shots tonals :
+  racine + cents (pyin) ; kicks : fondamentale (pic 30-150 Hz, 40-250 ms après l'attaque).
+- **Descripteurs** : punch (pic vs corps 30-100 ms + attaque), brillance (centroïde), decay, body (150-600 Hz), bruit
+  (planéité) + percentiles dans (type, catégorie) pour `query --punch high`. **Embedding** 96-d (40 bandes log-mel
+  moyenne + écart-type, en dB relatifs au max, + enveloppe 16 points sur 400 ms) en float16 base64 ; `similar` =
+  cosinus après z-score par dimension (stats de la bibliothèque dans l'index).
+- **Licences** : `.txt` / `.pdf` (pdftotext de Git) lus comme données → règles (`personal use only` → perso ;
+  `royalty free` / `derivative musical work` / `allowed to distribute` → OK) + restrictions (Content ID, revente…).
+  Pas de document = `unknown` (+ note manuelle).
+
+**Strudel** : `samples/library/strudel.json` (régénéré par `scan`, non versionné) : `lib_<cat>` (licence OK) et
+`libx_<cat>` (perso / inconnue), n = rang par score qualité (confiance, licence, format, punch / brillance / justesse
+selon la catégorie) ; URLs encodées (`%20`, `%23`…) vers les **fichiers d'origine**, servis en lecture seule par
+`serve_samples.py` sous `/lib/<pack>/<chemin>` (packs de l'index uniquement, pas de listing) ; le rendu hors ligne
+passe `--lib-root` à `render.mjs`. AIFF (Chrome ne les décode pas) et doublons AIFF des WAV exclus du manifeste.
+
+**Kit `lib`** (`generate.py --kit lib`) : une sélection par piste (`sampleindex.pick_lib_kit`) — kick, clap (sinon
+snare), hh, oh, perc (sinon tom), shaker (sinon hat fermé), crash (ride/cymbale, sinon bruit blanc) ; `--lib-like gww`
+= plus proche voisin de `gww_<piste>` (samples/strudel.json), sinon meilleur score ; `--lib-seed` = tirage pondéré
+parmi les 3 (like) / 8 meilleurs. Gains = gain du kit inspi × écart de `hit_db` avec le son de la ref. Basse : couches
+synthé du kit own **+** couche one-shot basse repitchée (`note` décalée de 36 − racine, car Strudel joue un sample de
+tableau à sa hauteur pour c2) si un one-shot basse à racine fiable existe (pyin ≥ 0,5, ±25 cents) — aucun dans les
+packs à licence OK actuellement. `--lib-hook` : hook sur un one-shot synthé (racine seule si c'est un accord).
+`--lib-loops` : top loop dont le BPM vérifié est à ±2 du morceau, `loopAt(bars).chop(bars)` (rééchantillonnage, 1
+tranche par mesure → masquable mesure par mesure), sous `P` dans les sections avec kick. Par défaut seuls les packs à
+licence OK ; `--lib-allow-unknown` ajoute les inconnus, jamais les « perso ». La RNG du kit est séparée : mêmes
+`--dna/--seed/--key/--bpm/--energy` ⇒ même morceau qu'avec les autres kits.

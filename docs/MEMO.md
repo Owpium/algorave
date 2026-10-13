@@ -70,6 +70,33 @@ le même en **`(premaster).wav`** (non compressé) et le **`.strudel.js`** jouab
 Aperçu MP3 128 kbps pour le téléphone : `out\_previews\track01_own.mp3` / `track01_inspi.mp3`.
 Réarranger : tableau `PLAN` en haut du `.strudel.js` (1 case = 4 mesures, lettres = couches actives, légende en commentaire).
 
+## 3 bis. Bibliothèque de samples (tes packs dans `Music\`)
+
+Indexer (à relancer quand tu ajoutes un pack — liste `PACKS` en haut du script ; ~11 min la 1re fois, puis seulement les nouveaux fichiers) :
+```powershell
+.\.venv\Scripts\python.exe tools\sampleindex.py scan
+```
+Stats + licences par pack + 20 fichiers à vérifier à l'oreille : `tools\sampleindex.py stats`
+
+Chercher :
+```powershell
+.\.venv\Scripts\python.exe tools\sampleindex.py query --cat kick --punch high --bright low --licence ok --limit 10
+```
+(`--bpm 124`, `--key Am`, `--pack ghosthack`, `--loop` / `--oneshot`, `--decay`, `--body`, `--noise` = `low|mid|high`)
+
+Le plus proche d'un son (fichier WAV ou son extrait, ex. le kick de Groove With It) :
+```powershell
+.\.venv\Scripts\python.exe tools\sampleindex.py similar gww_kick --cat kick
+```
+Générer avec tes packs (seulement les packs dont la licence autorise la sortie commerciale) :
+```powershell
+.\.venv\Scripts\python.exe tools\generate.py --dna gww --name track02 --seed 42 --key 8A --bpm 123 --kit lib --lib-like gww --lib-loops
+```
+- `--lib-like gww` : pour chaque piste, le sample le plus proche du son de la ref · `--lib-seed 3` : autre tirage
+- `--lib-pack ghosthack` : un seul pack · `--lib-allow-unknown` : + packs à licence inconnue (SAS019, SINEE)
+- `--lib-hook` : hook joué par un one-shot synthé · `--lib-loops` : boucle top/perc si BPM à ±2
+- Dans Strudel : `serve_samples.py` sert aussi les packs (lecture seule) → noms `lib_kick:0…`, `lib_clap:…` (licence OK) et `libx_…` (perso / inconnue)
+
 ## 4. Astuces live Strudel
 
 - Tempo : `setcpm(124/4)` (1 cycle = 1 mesure)
@@ -89,7 +116,8 @@ tools\t2s.bat golden
 ## 6. Droits d'auteur
 
 - Sons extraits (kit `inspi`, dossier `samples\`) : **usage perso uniquement**
-- Public / publication : kit `own` ou tes propres packs de samples
+- Public / publication : kit `own` ou tes propres packs de samples (kit `lib` = packs à licence OK)
+- Pack **Riemann gratuit** : usage perso seulement (pas de sortie commerciale) → jamais dans le kit `lib`
 - Le groove et la structure (rythmes, placements, arrangement) sont libres
 
 ## 7. Dépannage

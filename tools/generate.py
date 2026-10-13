@@ -1,13 +1,17 @@
 """generate.py v2 — new DJ-mixable track from a style DNA (out/dna/<name>.json) -> Strudel code + mastered WAV
 
     .venv\\Scripts\\python.exe tools\\generate.py --dna gww --name gww_c1 --seed 1 [--key 10A] [--bpm 123]
-        [--energy 0.7] [--length-min 6] [--intro-bars 16] [--outro-bars 16] [--kit own|inspi|both]
-        [--no-render] [--no-master] [--no-stems] [--no-mp3]
+        [--energy 0.7] [--length-min 6] [--intro-bars 16] [--outro-bars 16] [--kit own|inspi|lib|both|all]
+        [--lib-like gww] [--lib-pack ghosthack] [--lib-seed N] [--lib-allow-unknown] [--lib-loops] [--lib-hook]
+        [--lib-bass auto|off] [--no-render] [--no-master] [--no-stems] [--no-mp3]
 
 Outputs in out/gen/<name>/: <name>.strudel.js (own kit), <name>.inspi.strudel.js (inspi kit, personal listening
 only: copyrighted samples of the reference), dna.json (snapshot), report.json (plan, novelty / DNA-fit, bass
 balance, loudness), "<name> - <BPM>bpm - <Camelot>.wav" (mastered, own kit), "... (premaster).wav",
 "... (inspi).wav", "... (inspi premaster).wav"; MP3 previews 128 kbps in out/_previews/<name>_<kit>.mp3.
+Kit lib: one-shots of Jo's sample packs picked from out/library/index.json (tools/sampleindex.py), only packs whose
+licence allows releases unless --lib-allow-unknown; --lib-like gww = per lane, the sample closest to the reference's
+extracted one (embedding NN). -> <name>.lib.strudel.js + "... (lib).wav" (needs serve_samples.py for live play).
 Design: docs/generator-design.md (v2 = section 6).
 """
 import argparse, json, math, os, shutil, subprocess, sys
@@ -577,6 +581,15 @@ def emit(name, P, kit, meta, only=None):
         w(f"  .gain(\"[{round(.5 * g, 3)} {round(.25 * g, 3)} {g} {round(.3 * g, 3)}]*4\").velocity(ENERGY)")
         w("  .mask(on((n, i, l, t) => has(t, 'S')))")
         w("")
+        LB = (meta.get("lib") or {}).get("loop") or {}
+        if kit == "lib" and LB.get("strudel"):
+            nb = LB["bars"]
+            w(f"// library top loop ({LB['pack']}, {LB['bpm']:g} BPM -> {bpm}: loopAt resamples it to the track tempo),"
+              " under P in the main sections")
+            w(f"$: s(\"{LB['strudel']}\").loopAt({nb}).chop({nb}).hpf(250).gain({LB['gain']}).velocity(ENERGY).pan(.45)"
+              "   // chop: 1 slice per bar -> the mask cuts it bar by bar")
+            w("  .mask(on((n, i, l, t) => has(t, 'P') && has(t, 'K') && !mb(t, i) && n != 'intro' && n != 'outro'))")
+            w("")
         w("// fills: clap roll on the last bar of a section and in mini-breaks, rolling build-up under R")
         fills = ["~", "~ ~ ~ ~ ~ ~ ~ ~ x x x x x x x x".replace("x", sym["fill"]),
                  " ".join([sym["fill"], "~"] * 8), " ".join([sym["fill"]] * 16)]
@@ -616,11 +629,26 @@ def emit(name, P, kit, meta, only=None):
         w("$: note(bsel.pick(BASS)).s('sine').velocity(bsel.pick(BASS_VEL)).postgain(PUMP)   // sub")
         w("  .attack(ATT).decay(.2).sustain(.75).release(.05).lpf(200)")
         w(f"  .gain(seq((n, i, l, t) => has(t, 'B') ? {G['sub']} : {round(G['sub'] * .55, 2)})).mask(bon)")
-        if kit == "own":
+        if kit in ("own", "lib"):
             w("$: note(bsel.pick(BASS)).s('sawtooth').lpf(bcut).lpenv(BASS_ENV).lpa(.002).lpd(.12).lps(.25).lpq(7)")
             w("  .shape(.5).hpf(110).velocity(bsel.pick(BASS_VEL)).postgain(PUMP)   // body (100-400 Hz + harmonics)")
             w("  .attack(ATT).decay(.16).sustain(.6).release(.04)")
             w(f"  .gain(seq((n, i, l, t) => has(t, 'B') ? {G['body']} : {round(G['body'] * .7, 2)})).mask(bon)")
+            LBs = (meta.get("lib") or {}).get("bass") or {}
+            if kit == "lib" and LBs.get("strudel"):
+                sh = 36 - LBs["root_midi"]   # Strudel plays an array sample at its own pitch for note c2 (= 36)
+                pat_l = []
+                for lp in loops:
+                    pat_l.append(two_bar([[(i, d, midi_name(root + sh + (r if r < 8 else r - 12) + 12 * o))
+                                           for bb, i, d, r, o, v in lp["notes"] if bb == b] for b in range(2)]))
+                nm, _, nn = LBs["strudel"].partition(":")
+                w(f"// library bass one-shot layer ({LBs['pack']}, root {midi_name(LBs['root_midi'])}): notes shifted by {sh:+d}"
+                  " so the sample sounds at the written pitch")
+                w(f"const BASS_LIB = {js_list(pat_l)}")
+                w(f"$: note(bsel.pick(BASS_LIB)).s('{nm}').n({nn}).clip(1).shape(.25).hpf(90)")
+                w("  .lpf(seq((n, i, l, t) => has(t, 'B') ? Math.round(CUT * 3) : Math.round(300 + 600 * (i % 8) / 7)))")
+                w("  .velocity(bsel.pick(BASS_VEL)).postgain(PUMP).attack(ATT)")
+                w(f"  .gain(seq((n, i, l, t) => has(t, 'B') ? {LBs['gain']} : {round(LBs['gain'] * .7, 3)})).mask(bon)")
         else:
             w("$: note(bsel.pick(BASS)).s('gww_bass').clip(1).nudge(0.0272).shape(.35).hpf(100)   // body: reference bass sample")
             w("  .lpf(seq((n, i, l, t) => has(t, 'B') ? Math.round(CUT * 4) : Math.round(300 + 700 * (i % 8) / 7)))")
@@ -638,10 +666,25 @@ def emit(name, P, kit, meta, only=None):
         hp = []
         for h in H:
             hp.append(two_bar([[(s, d, tones(h["chord"], sh)) for bb, s, d, sh in h["hits"] if bb == b] for b in range(2)]))
-        w(f"// ---- hook ({meta['hook_sound'] if kit == 'own' else 'gww_lead'}): chord motif, rhythm from the DNA lead + 'other' onsets; W = variation")
+        LH = (meta.get("lib") or {}).get("hook") or {}
+        lib_hook = kit == "lib" and bool(LH.get("strudel"))
+        hs_name = LH["strudel"] if lib_hook else ("gww_lead" if kit == "inspi" else meta["hook_sound"])
+        w(f"// ---- hook ({hs_name}): chord motif, rhythm from the DNA lead + 'other' onsets; W = variation")
         w(f"const HOOK = {js_list(hp)}")
         w("const hcut = seq((n, i, l, t) => has(t, 'Y') ? Math.round(2200 + 1400 * tri((i % 16) / 16)) : Math.round(500 + 1500 * (i % 8) / 7))")
-        if kit == "own":
+        if lib_hook:
+            sh = 36 - LH["root_midi"]   # sample root -> written pitch (array samples sound at c2 = 36)
+            only_root = LH.get("sub") == "chord"   # a chord sample plays the chord itself: root only
+            hp_l = []
+            for h in H:
+                ch = [h["chord"][0]] if only_root else h["chord"]
+                tl = lambda c, x: "[" + ",".join(midi_name(sroot + x + sh + y) for y in c) + "]"
+                hp_l.append(two_bar([[(s_, d, tl(ch, x)) for bb, s_, d, x in h["hits"] if bb == b] for b in range(2)]))
+            nm, _, nn = LH["strudel"].partition(":")
+            w(f"const HOOK_LIB = {js_list(hp_l)}   // shifted by {sh:+d} (sample root {midi_name(LH['root_midi'])})")
+            w(f"$: note(seq((n, i, l, t) => has(t, 'W') ? 1 : 0).pick(HOOK_LIB)).s('{nm}').n({nn}).clip(1).hpf(250).lpf(hcut)"
+              f".gain({LH['gain']})")
+        elif kit != "inspi":
             w(f"$: note(seq((n, i, l, t) => has(t, 'W') ? 1 : 0).pick(HOOK)){meta['hook_chain']}")
         else:
             w("$: note(seq((n, i, l, t) => has(t, 'W') ? 1 : 0).pick(HOOK)).s('gww_lead').clip(1).hpf(200).lpf(hcut)")
@@ -703,11 +746,13 @@ def node_exe():
     raise SystemExit("node not found")
 
 
-def render_once(code_file, wav, cycles, begin=0, samples_dir=None):
+def render_once(code_file, wav, cycles, begin=0, samples_dir=None, lib_root=None):
     cmd = [node_exe(), str(RENDER_DIR / "render.mjs"), str(code_file), str(wav), "--cycles", str(cycles),
            "--begin", str(begin)]
     if samples_dir:
         cmd += ["--samples-dir", str(samples_dir)]
+    if lib_root:
+        cmd += ["--lib-root", str(lib_root)]
     for attempt in range(3):
         r = subprocess.run(cmd, capture_output=True, text=True, cwd=str(RENDER_DIR))
         info = None
@@ -721,7 +766,7 @@ def render_once(code_file, wav, cycles, begin=0, samples_dir=None):
     raise SystemExit("render failed")
 
 
-def render(code_file, tmpdir, cycles, samples_dir=None, chunk=8, tail=2, workers=4):
+def render(code_file, tmpdir, cycles, samples_dir=None, chunk=8, tail=2, workers=4, lib_root=None):
     """Offline render in chunks (see v1 notes: one long OfflineAudioContext render is quadratic). Chunk k renders
     cycles [b, b+chunk+tail) with every pattern masked to [b, b+chunk); chunks are overlap-added after undoing
     render.mjs's per-chunk peak normalisation. -> (raw float32 stereo at the code's own gains, info, errors)"""
@@ -737,7 +782,7 @@ def render(code_file, tmpdir, cycles, samples_dir=None, chunk=8, tail=2, workers
         cf = tmp / f"c{b:04d}.js"
         cf.write_text(code + f'\nall(x => x.mask("<{mask}>"))\n', encoding="utf-8")
         w = tmp / f"c{b:04d}.wav"
-        info, errs = render_once(cf, w, c + tail, b, samples_dir)
+        info, errs = render_once(cf, w, c + tail, b, samples_dir, lib_root)
         y, sr = sf.read(str(w), dtype="float32", always_2d=True)
         return b, y / info["scale"], info, errs
 
@@ -949,6 +994,65 @@ def reference_levels(dna):
             "bass_balance_main": (dna.get("audio") or {}).get("balance")}
 
 
+# ---------------------------------------------------------------- kit lib (sample library, tools/sampleindex.py)
+LIB_REF_GAIN = {"kick": 1.0, "clap": .71, "hh": .52, "oh": .3, "perc": .83, "shaker": .25}   # inspi kit gains
+
+
+def _lib_gain(ref_gain, ref_hit, hit, default_hit=-12.0, lo=.05, hi=4.0):
+    """gain that brings the library sample's hit level (RMS 100 ms after the peak) to the reference sample's"""
+    ref_hit = default_hit if ref_hit is None else ref_hit
+    return round(float(np.clip(ref_gain * 10 ** ((ref_hit - hit) / 20), lo, hi)), 3)
+
+
+def lib_selection(a, bpm, bass_root):
+    import sampleindex as si
+    sel = si.pick_lib_kit(bpm, bass_root, like=a.lib_like, packs=a.lib_pack, seed=a.lib_seed,
+                          allow_unknown=a.lib_allow_unknown, loops=a.lib_loops, hook=a.lib_hook, bass=a.lib_bass)
+    for lane, g in LIB_REF_GAIN.items():
+        if sel.get(lane, {}).get("strudel"):
+            sel[lane]["gain"] = _lib_gain(g, sel[lane]["ref_hit_db"], sel[lane]["hit_db"], lo=g / 4, hi=g * 2)
+    if sel.get("crash", {}).get("strudel"):
+        sel["crash"]["gain"] = _lib_gain(1.0, -30.0, sel["crash"]["hit_db"])
+    if sel.get("bass", {}).get("strudel"):    # layer under the saw body: ~half the inspi sample-bass level
+        sel["bass"]["gain"] = _lib_gain(G["bass_sample"] * .5, sel["bass"]["ref_hit_db"], sel["bass"]["hit_db"])
+    if sel.get("hook", {}).get("strudel"):
+        sel["hook"]["gain"] = _lib_gain(1.0, sel["hook"]["ref_hit_db"], sel["hook"]["hit_db"], lo=.1, hi=3)
+    if sel.get("loop", {}).get("strudel"):
+        sel["loop"]["gain"] = round(float(np.clip(10 ** ((-28.0 - (sel["loop"]["lufs"] or -20)) / 20), .05, 1.5)), 3)
+    for lane, v in sel.items():
+        if v.get("strudel"):
+            log(f"  lib {lane:6s}: {v['strudel']}  {v['path']}  gain {v.get('gain')}"
+                + (f"  dist {v['dist']}" if v.get("dist") is not None else ""))
+        else:
+            log(f"  lib {lane:6s}: {v.get('skipped', '')}")
+    return sel
+
+
+def lib_kit(sel):
+    """KITS entry for the library: symbols 'lib_kick:N' (mini-notation name:index), gains matched to the inspi kit;
+    a lane without a library sample falls back to the own kit's 909"""
+    unknown = any(str(v.get("strudel", "")).startswith("libx_") for v in sel.values())
+    note = "lib_* = your packs, licence OK for releases" + ("; libx_* = licence UNKNOWN: check before releasing"
+                                                             if unknown else "")
+    fallback = {"kick": "bd", "clap": "cp", "hh": "hh", "oh": "oh", "perc": "rim", "shaker": "sh"}
+    sym, K = {}, {"header": f"samples('http://localhost:5432/library/strudel.json')  // {note}"}
+    for lane in ("kick", "clap", "hh", "oh", "perc", "shaker"):
+        v = sel.get(lane, {})
+        if v.get("strudel"):
+            sym[lane] = v["strudel"]
+            K[lane] = ({"clap": ".hpf(150)", "oh": ".cut(1)", "shaker": ".hpf(5000)"}.get(lane, ""), v["gain"])
+        else:
+            sym[lane] = fallback[lane]
+            K[lane] = KITS["own"][lane]
+    sym["fill"] = sym["clap"]
+    K["fill"] = (K["clap"][0], round(K["clap"][1] * .85, 3))
+    c = sel.get("crash", {})
+    K["crash"] = (f"s('{c['strudel']}').hpf(2500)", c["gain"]) if c.get("strudel") else \
+        ("s('white').attack(.001).decay(1.1).sustain(0).hpf(5000)", .1)
+    K["sym"] = sym
+    return K
+
+
 # ---------------------------------------------------------------- main
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -961,7 +1065,18 @@ def main():
     ap.add_argument("--length-min", type=float, default=6.0)
     ap.add_argument("--intro-bars", type=int, default=16, help="drums-led intro for DJ mixing (multiple of 8)")
     ap.add_argument("--outro-bars", type=int, default=16, help="drums-led outro for DJ mixing (multiple of 8)")
-    ap.add_argument("--kit", default="own", choices=["own", "inspi", "both"])
+    ap.add_argument("--kit", default="own", choices=["own", "inspi", "lib", "both", "all"],
+                    help="both = own + inspi, all = own + inspi + lib")
+    ap.add_argument("--lib-like", default=None, help="kit lib: pick per lane the sample closest to <prefix>_<lane> of "
+                    "samples/strudel.json (e.g. gww)")
+    ap.add_argument("--lib-pack", action="append", default=None, help="kit lib: only packs matching (repeatable)")
+    ap.add_argument("--lib-seed", type=int, default=None, help="kit lib: random pick among the best matches")
+    ap.add_argument("--lib-allow-unknown", action="store_true", help="kit lib: also packs with an unknown licence "
+                    "(never the personal-only ones)")
+    ap.add_argument("--lib-loops", action="store_true", help="kit lib: layer a library top loop (BPM within 2 only)")
+    ap.add_argument("--lib-hook", action="store_true", help="kit lib: hook played by a library synth one-shot")
+    ap.add_argument("--lib-bass", default="auto", choices=["auto", "off"], help="kit lib: bass one-shot body layer "
+                    "(auto = only if a confidently pitched bass one-shot exists)")
     ap.add_argument("--no-render", action="store_true")
     ap.add_argument("--no-master", action="store_true", help="skip the mastering (WAV = peak-normalised premaster)")
     ap.add_argument("--no-stems", action="store_true", help="skip the bass-stem render used for the bass metrics")
@@ -1018,7 +1133,10 @@ def main():
     out = ROOT / "out" / "gen" / a.name
     out.mkdir(parents=True, exist_ok=True)
     (out / "dna.json").write_text(dumps(dna), encoding="utf-8")
-    kits = ["own", "inspi"] if a.kit == "both" else [a.kit]
+    kits = {"both": ["own", "inspi"], "all": ["own", "inspi", "lib"]}.get(a.kit, [a.kit])
+    if "lib" in kits:
+        meta["lib"] = lib_selection(a, bpm, bass_root)
+        KITS["lib"] = lib_kit(meta["lib"])
     report = {"name": a.name, "version": 2, "params": vars(a), "bpm": bpm, "key": key_name(tonic, mode), "camelot": cam,
               "bars": total, "minutes": meta["minutes"], "sections": secs, "timeline": timeline,
               "arrangement_checks": {"longest_static_bars": static_runs(plan),
@@ -1028,25 +1146,28 @@ def main():
               "novelty": {"bass": [l["novelty"] for l in bass], "hook": [h["novelty"] for h in hook], "threshold": NOVELTY_MIN},
               "dna_fit": {"drums": drums["fit"], "bass": [l["fit"] for l in bass], "hook": [h["fit"] for h in hook]},
               "hook_sound_own": hook_sound, "renders": {}}
+    if "lib" in meta:
+        report["lib"] = meta["lib"]
     # bars with kick + open bass (bass metrics window)
     kb = [i for i, c in enumerate(c for _, cs in plan for c in cs for _ in range(CELL)) if {"K", "B"} <= c]
     for kit in kits:
         code = emit(a.name, P, kit, meta)
-        cf = out / (f"{a.name}.strudel.js" if kit == "own" else f"{a.name}.inspi.strudel.js")
+        cf = out / (f"{a.name}.strudel.js" if kit == "own" else f"{a.name}.{kit}.strudel.js")
         cf.write_text(code, encoding="utf-8")
         log("wrote", cf)
         if a.no_render:
             continue
         bpm_s = f"{bpm:g}"
-        suffix = "" if kit == "own" else " (inspi)"
+        suffix = "" if kit == "own" else f" ({kit})"
         base = f"{a.name} - {bpm_s}bpm - {cam}"
-        sdir = ROOT / "samples" if kit == "inspi" else None
+        sdir = ROOT / "samples" if kit in ("inspi", "lib") else None
+        lroot = ROOT.parent if kit == "lib" else None
         log(f"render {kit} kit: {total} bars ...")
-        raw, info, errs = render(cf, out / f"_chunks_{kit}", total, sdir)
+        raw, info, errs = render(cf, out / f"_chunks_{kit}", total, sdir, lib_root=lroot)
         sr = 44100
         pre = raw / (np.abs(raw).max() + 1e-12) * 10 ** (-1 / 20)
         rep = {"render": info, "errors": errs[:10]}
-        pre_wav = out / (f"{base}{' (premaster)' if kit == 'own' else ' (inspi premaster)'}.wav")
+        pre_wav = out / (f"{base}{' (premaster)' if kit == 'own' else f' ({kit} premaster)'}.wav")
         sf.write(str(pre_wav), pre, sr, subtype="PCM_16")
         rep["premaster"] = {"wav": str(pre_wav.relative_to(ROOT)), "lufs": lufs(pre, sr), "true_peak_db": true_peak_db(pre),
                             "rms_dbfs": rms_db(pre)}
@@ -1061,7 +1182,7 @@ def main():
         if not a.no_stems:
             bcf = out / f"_bass_{kit}.strudel.js"
             bcf.write_text(emit(a.name, P, kit, meta, only={"bass"}), encoding="utf-8")
-            braw, _, _ = render(bcf, out / f"_chunks_bass_{kit}", total, sdir)
+            braw, _, _ = render(bcf, out / f"_chunks_bass_{kit}", total, sdir, lib_root=lroot)
             bcf.unlink(missing_ok=True)
             n = min(len(raw), len(braw))
             spb_s = int(round(spb * sr))

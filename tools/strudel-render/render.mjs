@@ -1,5 +1,5 @@
 // render_strudel: Strudel code -> WAV, offline (OfflineAudioContext via @strudel/web renderPatternAudio)
-// usage: node render.mjs <code.js> <out.wav> [--cycles N] [--begin C] [--samples-dir DIR] [--browser PATH]
+// usage: node render.mjs <code.js> <out.wav> [--cycles N] [--begin C] [--samples-dir DIR] [--lib-root DIR] [--browser PATH]
 // Starts at cycle <begin> (default 0) on an OfflineAudioContext: no scheduler latency, sample-exact.
 // http://localhost:5432/* (samples('http://localhost:5432/strudel.json')) is served from --samples-dir.
 // Needs a local Edge or Chrome (playwright-core drives it headless, no browser download).
@@ -25,6 +25,8 @@ if (!codeFile || !outWav) {
 const cycles = parseFloat(opt('--cycles', '8'));
 const begin = parseFloat(opt('--begin', '0'));
 const samplesDir = opt('--samples-dir', null);
+// sample library (tools/sampleindex.py): http://localhost:5432/lib/<pack>/<path> -> <lib-root>/<pack>/<path>, read-only
+const libRoot = opt('--lib-root', null);
 const code = fs.readFileSync(codeFile, 'utf8');
 
 // drum machine banks (.bank("RolandTR909")) as on strudel.cc
@@ -67,8 +69,10 @@ try {
     // http://localhost:5432/<path> -> <samples-dir>/<path> (no need for serve_samples.py while rendering)
     await page.route(/^http:\/\/localhost:5432\//, (route) => {
       const rel = decodeURIComponent(new URL(route.request().url()).pathname).replace(/^\//, '') || 'strudel.json';
-      const f = path.resolve(samplesDir, rel);
-      if (!f.startsWith(path.resolve(samplesDir)) || !fs.existsSync(f) || fs.statSync(f).isDirectory())
+      const lib = libRoot && rel.startsWith('lib/');
+      const top = path.resolve(lib ? libRoot : samplesDir);
+      const f = path.resolve(top, lib ? rel.slice(4) : rel);
+      if (!f.startsWith(top + path.sep) || !fs.existsSync(f) || fs.statSync(f).isDirectory())
         return route.fulfill({ status: 404, body: '' });
       route.fulfill({ status: 200, path: f, headers: { 'access-control-allow-origin': '*',
         'content-type': MIME[path.extname(f)] || 'application/octet-stream' } });
