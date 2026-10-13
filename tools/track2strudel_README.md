@@ -7,7 +7,38 @@ Audio -> stems (demucs) -> beats (beat_this) -> drums (ADTOF) + bass/lead (basic
 .venv\Scripts\python.exe tools\track2strudel.py "refs\track.mp3" [--start S --dur D] [--out out\slug]
     [--bars-per-loop auto|1|2|4] [--no-overlay] [--no-lead] [--compare] [--samples] [--prefix gw] [--no-variants]
 ```
-Batch for the 5 reference excerpts (code + samples + render): `bash tools/run_v24_excerpts.sh` (v2.3: `run_v23_excerpts.sh`).
+
+## Workflow (2026-10) : une commande, golden, paramètres — zéro token LLM si ça passe
+
+```
+tools\t2s.bat "refs\morceau.mp3" --auto-excerpt --slug morceau   # = python tools\t2s.py ... (venv + node)
+python tools\t2s.py <audio> [--start S --dur D | --auto-excerpt | --full] [--slug N] [--prefix P] [--param NOM=VAL] [--force] [--synth]
+python tools\check_golden.py [--only a,b] [--force] [--param NOM=VAL] [--update] [--no-run]
+python tools\t2s_params.py                                         # liste des constantes (défaut, bornes, rôle)
+```
+- **t2s.py** : excerpt → stems (demucs) → détections (`_detections.json`) → track2strudel → extract_samples/loops →
+  render_strudel `--groups --which samples` → verdict. Chaque étape a une clé = hash (audio + start/dur, clé amont,
+  code source des scripts de l'étape, `--param`, `T2S_NO_*`, prefix) dans `out\<slug>\_t2s_cache.json` : sautée si
+  inchangée. Un dossier `out\<slug>` d'avant t2s est « adopté » (excerpt / stems / détections). Logs : `out\<slug>\t2s_*.log`.
+- **Verdict** (`out\<slug>\verdict.json`) : PASS si logmel ≥ 0.84, |level gap| ≤ 1 dB, |band gap abs| ≤ 2 dB
+  (< 150 / 150-4k / > 4k), |kick| / |vox| / |other| align ≤ 5 ms, symbolic share ≥ 0.5 (seuils = `ACCEPT` dans
+  t2s.py, calibrés pour que les 5 refs passent ; ref limite entre crochets dans le code). Sur FAIL seulement :
+  `out\<slug>\diag.md` (< 150 lignes : métriques en échec, groupes de stems, détections clés, heuristiques activées,
+  ref golden la plus proche, 3 pires mesures) = **le seul fichier à faire lire à un LLM**. Exit 0 / 1 / 2 (crash).
+- **--auto-excerpt** : stems + détections du morceau entier dans `out\<slug>_full` (cache, `--full-dir` pour en
+  réutiliser un), puis fenêtre de 32 mesures : score = lanes actives (kick / snare / hats / ride / basse) − 0.25 ×
+  (écart-type < 150 Hz + > 4 kHz, dB : pas de build / break filtré) + 0.1 × (niveau − fenêtre la plus forte) − 3 ×
+  (mesures sans kick). Détail + 2 alternatives dans `out\<slug>_full\_scan.json`.
+- **symbolic share** = lanes actives one-shot / notes ÷ lanes actives (les boucles de stems vox / other ne comptent
+  pas) : la fidélité ne doit pas s'acheter en remplaçant des lanes éditables par des boucles audio.
+- **check_golden.py** : rejoue les 5 refs de `tools\golden.json` (métriques v2.4 figées + paramètres de run), échoue
+  (exit 1) si une métrique régresse au-delà de sa tolérance (`TOL` : corr −0.01, groupes −0.02, |gap| +0.5 dB,
+  groupes +1 dB, align +2 ms, per-bar r −0.03 / mae +0.3 dB, symbolic share : aucune baisse). `--update` re-fige
+  après un changement voulu **et validé à l'oreille** (refusé avec des `--param` / `T2S_NO_*`).
+- **t2s_params.py** : les constantes réglées à la main (MIN_CONF, CLAP_R_MID, CLAP_R_HI, BANDPERC_DB, SWING_MIN,
+  ADD_THR, MIN_EXPLAINED, RUMBLE_MIN_COH...) avec défauts v2.4 + bornes ; `--param NOM=VAL` ou env
+  `T2S_PARAMS="NOM=VAL,..."` / `T2S_PARAM_NOM=VAL` (transmis aux sous-processus). Les switches `T2S_NO_*` restent.
+- Anciens scripts (track2strudel_v1.py, run_v2*.sh) : `tools\_archive\`.
 
 ## v2.4 changes (2026-10) - techno: rumble, ghost hats, missed percs, stem level
 All generic, each one only acts when its condition is detected (env switches to disable them for A/B tests:
@@ -96,7 +127,7 @@ Outputs (`out\<slug>\`): `excerpt.wav`, `stems\` (cached: delete to recompute), 
 `compare_ab.wav` with `--compare` (4 bars original / 4 bars crude synth render of the loops, same grid).
 `--samples` runs extract_samples.py: drum one-shots, bass/lead notes **and** the vox / other stem loops (see below).
 
-v1 (kept as `tools\track2strudel_v1.py`) was tuned on The Story; v2 generalises it:
+v1 (kept as `tools\_archive\track2strudel_v1.py`) was tuned on The Story; v2 generalises it:
 
 - **Grid**: beats indexed by rounding intervals to the median beat; bar phase = most common
   downbeat phase. Phase flip by one beat only if clap energy on 1&3 beats 2&4 by > 1.4x
@@ -139,7 +170,7 @@ v1 (kept as `tools\track2strudel_v1.py`) was tuned on The Story; v2 generalises 
   (kick+bass+hats); L in 1/2/4 picked by leave-one-out agreement (prefers short).
 - 1 cycle = 1 bar: `setcpm(BPM/4)`. Strudel c4 = MIDI 60, so c2 = 36.
 
-Batch scripts used for the 4 reference tracks: `tools\run_v2_excerpts.sh`, `tools\run_v2_full.sh`.
+Batch scripts used for the 4 reference tracks (archived, superseded by t2s.py / check_golden.py): `tools\_archive\run_v2*.sh`.
 
 ## Real samples from the stems + offline Strudel render (personal study only, never publish the samples)
 

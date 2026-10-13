@@ -452,6 +452,14 @@ def main():
             f"(|.| {m['kick_offset_ms']['median_abs']} ms, p90 {m['kick_offset_ms']['p90_abs']} ms, n={m['kick_offset_ms']['n']}), "
             f"RMS per block {m['rms_diff_db_per_block']} dB, spectral corr {m['spectral_profile_corr_all']}")
     shutil.rmtree(tmp, ignore_errors=True)
+    prev = out / "compare_strudel.json"
+    if a.which != "both" and prev.exists():   # keep the other version's metrics (--which samples keeps 'synth')
+        try:
+            old = json.loads(prev.read_text(encoding="utf-8"))
+            allm = {k: old[k] for k in ("samples", "synth") if k in old and k not in allm} | allm
+            allm = {k: allm[k] for k in ("samples", "synth") if k in allm}
+        except (ValueError, KeyError):
+            pass
     (out / "compare_strudel.json").write_text(json.dumps(allm, indent=1), encoding="utf-8")
 
 

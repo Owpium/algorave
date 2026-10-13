@@ -29,6 +29,9 @@ import soundfile as sf
 import librosa
 from scipy.signal import butter, sosfiltfilt
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from t2s_params import P as TP  # noqa: E402  (hand-tuned thresholds, env T2S_PARAMS)
+
 SR = 44100
 PRE = 0.0015
 PEAK = 10 ** (-1 / 20)
@@ -123,7 +126,7 @@ def activity(stem, mix, t0, bar_s, nbars, kind, min_rel=None):
     rel = rs - rm
     top = np.percentile(rs, 90)
     if min_rel is None:
-        min_rel = -24.0 if kind == "vox" else -26.0     # Demucs bleed is ~ -35..-60 dB
+        min_rel = TP.LOOP_VOX_MIN_DB if kind == "vox" else TP.LOOP_OTHER_MIN_DB     # Demucs bleed is ~ -35..-60 dB
     act = (rel > min_rel) & (rs > top - 15)
     return act, rs, rm, rel
 
@@ -245,7 +248,7 @@ def loop_lane(out, an, kind, max_variants=4, write_dir=None, want_chops=False, d
     # in it (track2strudel emits the lead): Contradiction's c/d#/g stab sits at -33 dB and was dropped as bleed
     lead = an.get("lanes", {}).get("lead", {})
     quiet_ok = kind == "other" and full_dir is None and lead.get("emit") and lead.get("pitch_conf", 0) >= 0.8
-    act, rs, rm, rel = activity(stem, mix, t0, bar_s, nbars, kind, -36.0 if quiet_ok else None)
+    act, rs, rm, rel = activity(stem, mix, t0, bar_s, nbars, kind, TP.LOOP_OTHER_QUIET_DB if quiet_ok else None)
     act = act & np.isin(np.arange(nbars), full)
     info = dict(stem=stem_name, source="full track" if full_dir else "excerpt", bar_offset=bar_off, quiet_threshold=bool(quiet_ok),
                 bar_s=bar_s, downbeat0=t0, n_active=int(act.sum()), n_bars=len(full),

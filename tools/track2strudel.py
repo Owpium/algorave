@@ -27,10 +27,10 @@ ADTOF_THR = [0.22, 0.24, 0.32, 0.22, 0.30]  # package defaults
 # lane name -> (Strudel sound, GM pitch for drums.mid)
 LANES = {"kick": ("bd", 36), "clap": ("cp", 39), "perc": ("rim", 37), "hh": ("hh", 42),
          "oh": ("oh", 46), "ride": ("rd", 51)}
-MIN_CONF = 0.6          # lanes below this loop confidence are emitted commented-out
-CLAP_R_MID = 1.25       # 1-3 kHz: beats 2&4 vs 1&3 flux ratio (v1 value)
-BANDPERC_DB = 10.0      # v2.4: band-detected perc hits (dB over the 16th's median level)
-CLAP_R_HI = 1.5         # 3-7 kHz: same, stricter (hats live there too)
+# hand-tuned thresholds (MIN_CONF, CLAP_R_MID, CLAP_R_HI, BANDPERC_DB, SWING_MIN...): tools/t2s_params.py
+# (defaults = v2.4; override with --param NAME=VALUE or env T2S_PARAMS="NAME=VALUE,...")
+sys.path.insert(0, str(ROOT))
+from t2s_params import P as TP, parse as parse_params, apply as apply_params, effective as params_effective  # noqa: E402
 
 
 def log(*a):
@@ -236,7 +236,7 @@ def estimate_swing(grid, times):
     return info
 
 
-SWING_MIN = 0.06        # step: below this, odd/even offsets are groove noise, not swing
+# SWING_MIN (t2s_params): step; below this, odd/even offsets are groove noise, not swing
 
 
 def estimate_swing_audio(e_hf, times, step_q, step_t):
@@ -277,7 +277,7 @@ def estimate_swing_audio(e_hf, times, step_q, step_t):
     bcons = float(np.mean(bc)) if bc else 0.0
     info.update(odd_ms=round(mo * 1000, 2), even_ms=round(me * 1000, 2), offset_steps=round(sw, 3),
                 consistent=round(cons, 2), bars_consistent=round(bcons, 2))
-    if sw >= SWING_MIN and cons >= 0.6 and bcons >= 0.7:
+    if sw >= TP.SWING_MIN and cons >= TP.SWING_CONS and bcons >= TP.SWING_BARS_CONS:
         info["swing"] = round(float(min(sw, 0.45)), 2)
     return info
 
@@ -392,11 +392,12 @@ def lane_attacks(y_drums, lanes_grid, step_t, nbars, bass_steps=None, y_bass=Non
     return res
 
 
-def verified_rows(g, main_rows, E, full_bars, thr=8.0, max_var=6):
+def verified_rows(g, main_rows, E, full_bars, thr=None, max_var=6):
     """Bar-by-bar pattern of a drum lane = main loop, flipped only where ADTOF disagrees with the
     loop AND the lane band confirms it (>= 8 dB above / below the median level of that 16th over
     the excerpt). ADTOF misses quiet hits and doubles some, so its raw bars can't be trusted to
     write variations; the band level alone can't separate lanes. -> (variants, seq, n_flips)"""
+    thr = TP.VARIANT_DB if thr is None else thr
     nb = g.shape[0]; L = len(main_rows)
     med = np.nanmedian(E[full_bars], axis=0)
     rows = []
@@ -460,7 +461,8 @@ def smooth_q(v_db, k=3):
     return np.round(v * 2) / 2
 
 
-def vel_worth(v_db, full_bars, min_range=1.0):
+def vel_worth(v_db, full_bars, min_range=None):
+    min_range = TP.VEL_MIN_RANGE_DB if min_range is None else min_range
     x = np.asarray(v_db)[full_bars]
     return bool(len(x) >= 4 and np.percentile(x, 90) - np.percentile(x, 10) >= min_range)
 
@@ -979,7 +981,10 @@ def main():
     ap.add_argument("--prefix", default=None,
                     help="sample name prefix for --samples (gw -> gw_kick...); default: initials of the output folder name")
     ap.add_argument("--no-variants", action="store_true", help="one loop per lane (no per-bar variants / velocity automation)")
+    ap.add_argument("--param", action="append", default=[], metavar="NAME=VALUE",
+                    help="override a tools/t2s_params.py constant (repeatable; also passed to extract_samples)")
     a = ap.parse_args()
+    apply_params(parse_params(a.param))
 
     src = Path(a.audio)
     slug = re.sub(r"[^a-z0-9]+", "_", src.stem.lower()).strip("_")[:40]
@@ -1026,7 +1031,7 @@ def main():
     p13, p37 = mid.step_profile(grid), hi.step_profile(grid)
     # claps on 1&3 instead of 2&4 -> beat_this bar phase is off by one beat.
     # (stricter than v1's 1.15: kick-only tracks have ~equal energy on all quarters)
-    if p13[[0, 8]].sum() > 1.4 * p13[[4, 12]].sum() or p37[[0, 8]].sum() > 1.4 * p37[[4, 12]].sum():
+    if p13[[0, 8]].sum() > TP.PHASE_FLIP_R * p13[[4, 12]].sum() or p37[[0, 8]].sum() > TP.PHASE_FLIP_R * p37[[4, 12]].sum():
         phase = 1
         log("downbeat phase corrected by 1 beat (clap evidence on 1&3)")
         grid = Grid(beats, downbeats, phase_beats=phase); grid.offset_steps = round(lat / grid.spb * 4, 3)
@@ -1057,7 +1062,7 @@ def main():
 
     # --- drums -> lanes
     oh_ratio = open_hat_flags(drums_wav, hh_t) if len(hh_t) else np.array([])
-    is_open = oh_ratio > 0.35
+    is_open = oh_ratio > TP.OPEN_HAT_RATIO
 
     def drop_near(lane, refs, tol=0.03):
         ts, vs = lane
@@ -1087,8 +1092,8 @@ def main():
     cand = np.zeros((nbars, STEPS))
     for st in (4, 12):
         r13, r37 = mg13[:, st] / b13, mg37[:, st] / b37
-        ok = ((r13 > CLAP_R_MID) & (mg13[:, st] > 0.15 * mg13.max())) | \
-             ((r37 > CLAP_R_HI) & (mg37[:, st] > 0.15 * mg37.max()))
+        ok = ((r13 > TP.CLAP_R_MID) & (mg13[:, st] > TP.CLAP_MIN_LEVEL * mg13.max())) | \
+             ((r37 > TP.CLAP_R_HI) & (mg37[:, st] > TP.CLAP_MIN_LEVEL * mg37.max()))
         cand[:, st] = np.where(ok, np.clip(np.maximum(r13 / 3, r37 / 4), 0.3, 1), 0)
     keep = periodic_bars((cand > 0).any(1))
     clap_band = cand * keep[:, None]
@@ -1118,8 +1123,8 @@ def main():
     if not os.environ.get("T2S_NO_BANDPERC"):
         Ep = step_levels(hilbert_env(band_filter(y_dr, 800, 6000)), step_t, nbars)
         medp = np.nanmedian(Ep, 0)
-        flag = np.nan_to_num(Ep - medp[None], nan=-99) >= BANDPERC_DB
-        flag &= np.nan_to_num(Ep, nan=-999) >= np.nanmax(medp) - 12
+        flag = np.nan_to_num(Ep - medp[None], nan=-99) >= TP.BANDPERC_DB
+        flag &= np.nan_to_num(Ep, nan=-999) >= np.nanmax(medp) - TP.BANDPERC_RANGE_DB
         flag &= ~((lanes_grid["clap"] > 0) | (lanes_grid["perc"] > 0))
         for st_ in range(STEPS):
             b_ = 0
@@ -1128,7 +1133,7 @@ def main():
                     e_ = b_
                     while e_ < nbars and flag[e_, st_]:
                         e_ += 1
-                    if e_ - b_ >= 4:
+                    if e_ - b_ >= TP.BANDPERC_MIN_BARS:
                         band_perc[b_:e_, st_] = 0.7
                     b_ = e_
                 else:
@@ -1185,7 +1190,7 @@ def main():
     for name, (sym, _) in LANES.items():
         g = lanes_grid[name]
         use = active[name] & main
-        if use.sum() < max(2, 0.25 * main.sum()):  # too sparse -> drop lane
+        if use.sum() < max(2, TP.LANE_MIN_SHARE * main.sum()):  # too sparse -> drop lane
             continue
         if name == "perc" and band_perc.any() and not ((g > 0) & (band_perc == 0)).any():
             continue   # v2.4: band-detected perc only -> sparse lane (audio-verified bars), not a loop
@@ -1234,7 +1239,7 @@ def main():
             if ll:
                 ll["stats"] = pitched_stats(lead_notes, grid, main_bars, bar0)
                 n_loop = sum(x >= 0 for r in ll["pitches"] for x in r) / ll["L"]
-                ll["emit"] = bool(ll["conf"] >= 0.8 and n_loop >= 1 and ll["pitch_conf"] >= 0.6)
+                ll["emit"] = bool(ll["conf"] >= TP.LEAD_MIN_CONF and n_loop >= 1 and ll["pitch_conf"] >= TP.LEAD_MIN_PITCH_CONF)
                 ll["swing"] = bool(grid.swing and odd_late(lead_notes, grid))
                 loops["lead"] = ll
 
@@ -1342,6 +1347,7 @@ def main():
                     clap_detection=clap_info, clap_backbeat_share=round(bb_share, 2), legacy_snare_lane=legacy,
                     open_hat_count=int(is_open.sum()), sections=secs, band_perc_hits=int((band_perc > 0).sum()),
                     prefix=prefix, tuning=tuning,
+                    **({"params_overrides": params_effective()} if params_effective() else {}),
                     lane_attack_ms={k: round(v * 1000, 2) for k, v in att.items()},
                     full_bars=full_bars, variants=variant_info,
                     step_histogram={k: (lanes_grid[k] > 0).sum(0).tolist() for k in lanes_grid},
@@ -1438,7 +1444,7 @@ def render_compare(out, exc, grid, loops, bar0, nbars):
     for b in range(nbars):
         for name, v in loops.items():
             if name in kit:
-                if v["conf"] < MIN_CONF:
+                if v["conf"] < TP.MIN_CONF:
                     continue
                 row = v["loop"][b % v["L"]]
                 for i, on in enumerate(row):
@@ -1494,7 +1500,7 @@ def render_strudel(src, a, grid, key, loops, secs, align, sw_info, clap_info, te
          f"// alignment     : kick on 0/4/8/12 = {align['kick_on_quarters_pct']}% of kicks, "
          f"{align['bars_with_4otf']}/{align['nbars']} bars 4-on-floor (ADTOF latency corrected {align['adtof_latency_steps']:+.2f} step)",
          f"// swing         : " + (f"16th swing {sw:.2f} step (odd 16ths late, measured on the audio) -> .swingBy({sw:.2f}, 8)" if sw else
-                                   (f"none (odd-16th offset {sw_info['offset_steps']:+.3f} step on the audio, threshold {SWING_MIN}; n_odd={sw_info['n_odd']})"
+                                   (f"none (odd-16th offset {sw_info['offset_steps']:+.3f} step on the audio, threshold {TP.SWING_MIN}; n_odd={sw_info['n_odd']})"
                                     if sw_info.get('offset_steps') is not None else f"none (too few odd-16th hats to measure, n_odd={sw_info['n_odd']})")),
          f"// clap (2&4)    : band evidence median ratio 1-3k {clap_info['median_ratio_1_3k']}, 3-7k {clap_info['median_ratio_3_7k']}; "
          f"{clap_info['bars_kept']} bars of band claps kept (periodic)",
@@ -1562,13 +1568,13 @@ def render_strudel(src, a, grid, key, loops, secs, align, sw_info, clap_info, te
             note += f"; {len(rows_all) - v['L']} bar variant(s) confirmed by the {LANE_BAND[k][0] or 0}-{LANE_BAND[k][1] or 'up'} Hz band (.pick: one index per bar)"
         if v.get("vel_emit"):
             note += "; .velocity = per-bar level of the lane in the stem"
-        if v["conf"] < MIN_CONF:
-            note += f"  (below {MIN_CONF}: unreliable, left commented)"
+        if v["conf"] < TP.MIN_CONF:
+            note += f"  (below {TP.MIN_CONF}: unreliable, left commented)"
         if line is not None:
             out_l = [line + ext]
         else:
             out_l = vlines[:-1] + [vlines[-1] + ext]
-        if v["conf"] < MIN_CONF:
+        if v["conf"] < TP.MIN_CONF:
             out_l = ["// " + x for x in out_l]
         L += [note] + out_l + [""]
 
@@ -1585,8 +1591,8 @@ def render_strudel(src, a, grid, key, loops, secs, align, sw_info, clap_info, te
         if k == "lead" and not v.get("emit"):
             L.append("//   lead loop not consistent enough (conf<0.8 / pitch agreement<0.6) -> left commented")
             pre = "// "
-        if k == "bass" and v["conf"] < MIN_CONF:
-            L.append(f"//   bass loop below {MIN_CONF} confidence -> left commented (uncomment to try)")
+        if k == "bass" and v["conf"] < TP.MIN_CONF:
+            L.append(f"//   bass loop below {TP.MIN_CONF} confidence -> left commented (uncomment to try)")
             pre = "// "
         if st["acid"]:
             L.append(f"//   acid-like line: 303 approximated with a ladder filter envelope; "

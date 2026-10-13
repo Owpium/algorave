@@ -42,6 +42,7 @@ from scipy.signal import butter, sosfiltfilt, hilbert
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from track2strudel import Grid, STEPS, LANES, midi_name, derive_prefix, vel_pattern, rle, mini_bar, bjorklund  # noqa: E402
 import extract_loops  # noqa: E402
+from t2s_params import P as TP  # noqa: E402  (hand-tuned thresholds, env T2S_PARAMS)
 
 ROOT = Path(__file__).resolve().parent.parent
 SR = 44100
@@ -52,7 +53,7 @@ BAND = dict(kick=(30, 150), clap=(1000, 6000), perc=(800, 6000), hh=(7000, 16000
 SIM_BAND = dict(kick=(30, 16000), clap=(400, 16000), perc=(400, 16000), hh=(2000, 20000),
                 oh=(2000, 20000), ride=(2000, 20000))                       # similarity metric range
 HPF = dict(kick=None, clap=180, perc=150, hh=300, oh=250, ride=200)         # clean-up high-pass
-SPLIT_RATIO = 2.2      # timbre change point: between / within distance of per-bar hit spectra
+SPLIT_RATIO = TP.SPLIT_RATIO      # timbre change point: between / within distance of per-bar hit spectra
 NOISY = set() if os.environ.get("T2S_MEAN_ONLY") else {"hh", "oh", "ride", "clap", "perc"}
 PRE = 0.0015          # legacy pre-roll (analysis.json without code_offset_s)
 PEAK = 10 ** (-1 / 20)  # normalised peak (-1 dBFS)
@@ -365,14 +366,14 @@ def extract_drums(out, an, y, grid, bar0, step_s, steps, kick_extra=None, tile_k
             lpx = sos_band(None, 1500); hp4 = sos_band(4000, None)
             e4 = lambda x: float(np.sum(sosfiltfilt(hp4, mono(x)) ** 2))
             loss = 10 * np.log10((e4(v0) + 1e-20) / (e4(v1) + 1e-20))
-            if loss < -1.5:
+            if loss < -TP.HF_LOSS_DB:
                 v0 = sosfiltfilt(lpx, v0, axis=0) + (v1 - sosfiltfilt(lpx, v1, axis=0))
                 tail_fix = (tail_fix or "") + f"{'; ' if tail_fix else ''}0.wav = mean < 1.5 kHz + medoid above (mean lost {-loss:.1f} dB > 4 kHz)"
         if k in NOISY:
             hp4 = sos_band(4000, None)
             ehf = lambda x: float(np.sum(sosfiltfilt(hp4, mono(x)) ** 2) / (np.abs(x).max() ** 2 + 1e-12))
             loss = 10 * np.log10((ehf(v0) + 1e-12) / (ehf(v1) + 1e-12))
-            if loss < -1.5:
+            if loss < -TP.HF_LOSS_DB:
                 return v1, v0, med, (tail_fix or "") + f"{'; ' if tail_fix else ''}0.wav = medoid (mean lost {-loss:.1f} dB > 4 kHz)"
         return v0, v1, med, tail_fix
 
@@ -553,7 +554,7 @@ def four_on_floor(an):
     return bool(lp) and all([i for i, h in enumerate(r) if h] == [0, 4, 8, 12] for r in lp)
 
 
-def rumble_info(out, an, steps, min_coh=0.8, max_below_db=12.0):
+def rumble_info(out, an, steps, min_coh=TP.RUMBLE_MIN_COH, max_below_db=TP.RUMBLE_MAX_BELOW_DB):
     """v2.4: techno 'rumble' = a reverb / distorted kick tail tuned to the key that Demucs puts in the bass stem.
     Detected as a bass stem that repeats every beat (energy of the beat-synchronous mean / mean beat energy
     >= min_coh on the full bars, < 400 Hz) with a 4-on-the-floor kick and a bass level within max_below_db
@@ -602,10 +603,10 @@ def lane_rows(an, k, nbars):
 
 
 FIT_LANES = ("hh", "oh", "ride")
-ADD_THR = 0.0 if os.environ.get("T2S_NO_ADD") else 0.15   # v2.4: 16ths added to a fitted lane (gain vs its loudest 16th)
-MIN_STEP_GAIN = 0.01   # fitted 16ths under this (-40 dB) are removed from the rows
-ADD_MIN_EXPLAINED = 0.8   # ...only when the lane dominates its band (the model is unambiguous)
-MIN_EXPLAINED = 0.10   # a fitted lane explaining less of its band energy than this is left commented
+ADD_THR = 0.0 if os.environ.get("T2S_NO_ADD") else TP.ADD_THR   # v2.4: 16ths added to a fitted lane (gain vs its loudest 16th)
+MIN_STEP_GAIN = TP.MIN_STEP_GAIN   # fitted 16ths under this (-40 dB) are removed from the rows
+ADD_MIN_EXPLAINED = TP.ADD_MIN_EXPLAINED   # ...only when the lane dominates its band (the model is unambiguous)
+MIN_EXPLAINED = TP.MIN_EXPLAINED   # a fitted lane explaining less of its band energy than this is left commented
 
 
 def fit_step_gains(an, y, steps, drums, lanes=FIT_LANES, hop=64, smooth_ms=12.0):

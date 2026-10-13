@@ -4,13 +4,14 @@ Outils perso pour transformer un morceau (mp3/wav) en code [Strudel](https://str
 séparation en stems (demucs) → beats (beat_this) → batterie (ADTOF) + basse/lead (basic-pitch)
 → grille 16 pas par mesure → boucles par piste → code Strudel (+ samples extraits, rendu audio headless).
 
-Doc détaillée du pipeline : [tools/track2strudel_README.md](tools/track2strudel_README.md) (v2.3).
+Doc détaillée du pipeline : [tools/track2strudel_README.md](tools/track2strudel_README.md) (v2.4).
 
 ## Arborescence
 
 | Dossier | Contenu |
 |---|---|
-| `tools/` | Scripts Python (`track2strudel.py`, `extract_samples.py`, `render_strudel.py`, `serve_samples.py`, …) et scripts batch `.sh` |
+| `tools/` | `t2s.py` / `t2s.bat` (commande unique), `check_golden.py` + `golden.json` (non-régression), `t2s_params.py` (constantes), `track2strudel.py`, `extract_samples.py`, `render_strudel.py`, `serve_samples.py`, … |
+| `tools/_archive/` | Anciens scripts (v1, batchs `.sh` v2 → v2.4) |
 | `tools/strudel-render/` | Projet Node (rendu headless Strudel via playwright-core) |
 | `docs/` | Notes (veille open source, etc.) |
 | `out/<slug>/` | Sorties par morceau : `*.strudel.js`, `analysis.json`, `compare_strudel*.json`, `_detections.json`, `beats.tsv` |
@@ -28,8 +29,22 @@ cd tools\strudel-render
 npm install --ignore-scripts
 ```
 
-Utilisation : voir [tools/track2strudel_README.md](tools/track2strudel_README.md), par ex.
-`.venv\Scripts\python.exe tools\track2strudel.py "refs\track.mp3" --out out\slug --samples`.
+## Utilisation (une commande, zéro LLM)
+
+```powershell
+tools\t2s.bat "refs\morceau.mp3" --auto-excerpt --slug morceau     # ou --start 97.1 --dur 60, ou --full
+tools\t2s.bat golden                                                # non-régression des 5 refs (tools\golden.json)
+```
+(`t2s.bat` = venv + node dans le PATH + `python tools\t2s.py ...` ; glisser-déposer un audio sur le .bat = `--auto-excerpt`.)
+
+`t2s.py` enchaîne stems → détections → code → samples/boucles → rendu Strudel headless → **verdict PASS/FAIL**
+(seuils calibrés sur les refs golden). Chaque étape est en cache (hash des entrées + du code + des paramètres) :
+relancer ne refait que ce qui a changé. Sorties : `out\<slug>\verdict.json`, `compare_ab_strudel.wav` (à écouter),
+`<slug>.samples.strudel.js` ; en cas de FAIL seulement, `out\<slug>\diag.md` (< 150 lignes) = le seul fichier
+à donner à un LLM. Constantes réglables : `tools\t2s_params.py` (`--param NOM=VALEUR`).
+Après un changement voulu et validé à l'oreille : `python tools\check_golden.py --update`.
+
+Détails : [tools/track2strudel_README.md](tools/track2strudel_README.md).
 
 ## Générateur « style DNA » (morceaux nouveaux inspirés d'une ref)
 

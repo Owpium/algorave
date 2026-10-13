@@ -31,3 +31,6 @@ out/**/samples/
 
 # --- Claude Code ---
 .claude/settings.local.json
+
+# --- t2s : cache local des étapes
+out/**/_t2s_cache.json
