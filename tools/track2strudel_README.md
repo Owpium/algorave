@@ -40,6 +40,41 @@ python tools\t2s_params.py                                         # liste des c
   `T2S_PARAMS="NOM=VAL,..."` / `T2S_PARAM_NOM=VAL` (transmis aux sous-processus). Les switches `T2S_NO_*` restent.
 - Anciens scripts (track2strudel_v1.py, run_v2*.sh) : `tools\_archive\`.
 
+## Lot de morceaux : `tools\t2s_batch.py` (2026-10)
+
+```
+tools\t2s.bat batch <dossier> [--name N] [--only "glob,glob"] [--tags tags.csv] [--with-full] [--prune-stems]
+                              [--timeout-min 40] [--min-free-gb 20] [--no-mp3] [--redo]
+python tools\t2s_batch.py summary|triage|prune <lot> [--dry-run]
+```
+- Récursif (wav / aif / aiff / flac / mp3 / ogg). Slug = nom de fichier ascii, unique (collision → `_wav`, `_2`…),
+  jamais un slug golden, mémorisé dans `out\_batch\<lot>\state.json` (stable d'un run à l'autre). Par fichier :
+  `t2s.py <f> --auto-excerpt --slug <slug>` (+ `--full --slug <slug>_full` avec `--with-full`, pour dna.py), un à la
+  fois (GPU), sous-processus avec timeout ; log `out\_batch\<lot>\logs\<slug>.log`. Erreur / timeout = noté, le lot
+  continue. Ctrl+C = arrêt propre (les stems à moitié écrits par le run tué sont supprimés), relancer = reprise.
+- **Cache** : sauté si `out\<slug>\verdict.json` existe et `meta.json` porte la même signature (taille + mtime du
+  fichier, hash des scripts du pipeline, options). Sinon t2s relance seulement les étapes périmées (stems gardés).
+- **Tags** : `tags.csv` (séparateur `,` ou `;`) ou `tags.json` dans le dossier (ou `--tags`) : `filename,style,note,
+  favorite` + colonnes libres ; avancé : `slug` (réutiliser un `out\<slug>`) et `full_dir` (réutiliser une analyse
+  du morceau entier). Stockés avec les tags déduits (BPM, tonalité, swing, rumble, lane acid, clap, boucle vox,
+  lanes) dans `out\<slug>\meta.json`.
+- **Sorties** : `out\_batch\<lot>\summary.csv` (Excel, UTF-8 BOM) + `summary.md` (fichier, slug, BPM, key, verdict,
+  logmel, level gap, band gaps, symbolic share, signaux, échecs, chemin de l'aperçu) ; aperçu MP3 160 kbps de
+  `compare_ab_strudel.wav` dans `out\_previews\batch\<slug>.mp3` (ffmpeg).
+- **triage** : regroupe les FAIL par classe = métrique en échec la plus dépassée + sens (ex. `band_gap_abs_db.gt4k
+  trop haut (+)`), ERROR / TIMEOUT par 1re ligne d'erreur ; 1 à 3 `diag.md` représentatifs par classe (échec « pur »,
+  sévérité médiane) → `triage.md`. Un correctif de classe se valide ensuite sur tout le lot + `t2s.bat golden`.
+- **Disque** : avant chaque fichier, ≥ `--min-free-gb` (20) libres sur le disque de `out\`, sinon arrêt.
+  `--prune-stems` (ou `prune <lot>` après coup), **après un PASS seulement** :
+  - `out\<slug>\` : supprime `check_overlay.wav`, `compare_ab.wav`, `render_samples_before_loops.wav`,
+    `render_samples_placed.wav`, `render_synth*.wav`, `compare_ab_strudel_synth.wav`, `diag\` (personne ne les relit ;
+    recréés si l'étape tourne à nouveau). Gardés : `excerpt.wav`, `stems\` (extract_samples / render `--groups` /
+    golden), code, json, midi, `compare_ab_strudel.wav`, `render_samples.wav`, `samples\<slug>\`.
+  - `out\<slug>_full\` : supprime `stems\`, `excerpt.wav`, `check_overlay.wav` (sauf `--with-full` : dna.py les lit) ;
+    `_scan.json` (la fenêtre choisie) et `_detections.json` restent. Si les outils changent ensuite, le lot relance
+    l'extrait avec `--start/--dur` de `_scan.json` (même fenêtre, pas de demucs sur le morceau entier).
+  - ≈ 0,5-0,6 Go → ≈ 80 Mo par morceau (6 min de musique) ; avec `--with-full` ≈ 0,4 Go.
+
 ## v2.5 (2026-10) - acid / HF synth lane (`tools\acid_lane.py`, called by extract_samples)
 - **What**: a pitched part of the 'other' stem whose filter opens / closes from bar to bar. The 1-bar 'other' loop
   replays one timbre (per-bar level only), so the sweep was lost (Contradiction: the C stab on 16ths 3-4 / 9 / 13,

@@ -4,8 +4,10 @@ Usage:
   .venv\\Scripts\\python.exe tools\\serve_samples.py [--dir samples] [--port 5432]
 Then in strudel.cc:  samples('http://localhost:5432/strudel.json')
 Sample library (tools/sampleindex.py): samples('http://localhost:5432/library/strudel.json') ; its files are the
-ORIGINAL pack files, served READ-ONLY from <Music>/<pack>/<path> at /lib/<pack>/<path> (URL-encoded), only for the
-packs listed in out/library/index.json (no directory listing, no copy).
+ORIGINAL pack files, served READ-ONLY at /lib/<pack key>/<path> (URL-encoded), only for the packs listed in
+out/library/index.json AND belonging to a root enabled in tools/library_roots.json (pack key = folder name for the
+historical Music root, "Samples/<folder>" for Music\\Samples, "@<root>/<folder>" for a root outside Music\\).
+Audio files only, no directory listing, no copy. Restart the server after a `sampleindex.py scan`.
 
 Stdlib only. Listens on the loopback only (127.0.0.1 and ::1 -> "localhost" works whichever
 address the browser tries first), never on the LAN. Headers:
@@ -23,8 +25,10 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-LIB_ROOT = ROOT.parent          # C:\Users\Jo'\Music
-LIB_PACKS = set()               # pack folders allowed under /lib/ (from out/library/index.json)
+sys.path.insert(0, str(ROOT / "tools"))
+import libroots  # noqa: E402  (stdlib only)
+
+LIB_PACKS = {}                  # pack key allowed under /lib/ -> absolute pack dir (index.json x enabled roots)
 
 
 def load_lib_packs():
@@ -32,7 +36,12 @@ def load_lib_packs():
     if idx.exists():
         try:
             d = json.loads(idx.read_text(encoding="utf-8"))
-            LIB_PACKS.update(p["folder"] for p in d.get("packs", {}).values())
+            indexed = {p["folder"] for p in d.get("packs", {}).values()}
+            LIB_PACKS.update({k: v.resolve() for k, v in libroots.pack_dirs().items() if k in indexed})
+            skipped = indexed - set(LIB_PACKS)
+            if skipped:
+                print(f"[serve] {len(skipped)} indexed pack(s) not served (root disabled / folder gone): "
+                      + ", ".join(sorted(skipped)), file=sys.stderr)
         except Exception as e:
             print(f"[serve] cannot read {idx}: {e}", file=sys.stderr)
 
@@ -61,14 +70,17 @@ class Handler(SimpleHTTPRequestHandler):
         p = posixpath.normpath(unquote(urlsplit(path).path))
         if p == "/lib" or p.startswith("/lib/"):
             rel = p[len("/lib/"):]
-            pack = rel.split("/")[0]
             nope = str(Path(self.directory) / "__not_found__")
-            if pack not in LIB_PACKS or ".." in rel.split("/"):
+            if ".." in rel.split("/"):
                 return nope
-            f = (LIB_ROOT / rel).resolve()
-            base = (LIB_ROOT / pack).resolve()
-            if not f.is_file() or (f != base and base not in f.parents):
-                return nope   # files only: no directory listing of the packs
+            keys = [k for k in LIB_PACKS if rel.startswith(k + "/")]
+            if not keys:
+                return nope
+            key = max(keys, key=len)
+            base = LIB_PACKS[key]
+            f = (base / rel[len(key) + 1:]).resolve()
+            if not f.is_file() or base not in f.parents or f.suffix.lower() not in libroots.AUDIO_EXT:
+                return nope   # audio files of an allowed pack only: no directory listing, no docs
             return str(f)
         return super().translate_path(path)
 

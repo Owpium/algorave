@@ -30,6 +30,26 @@ Environ 2 min. Résultats dans `out\mon_morceau\` :
 - **PASS** ✅ → étape 2
 - **FAIL** ❌ → envoie à Claude **uniquement** `out\mon_morceau\diag.md`
 
+## 1 bis. Traduire un lot
+
+Mets les morceaux dans un dossier (sous-dossiers OK), puis :
+```powershell
+tools\t2s.bat batch "D:\Mes WAV" --prune-stems
+```
+- Un morceau après l'autre (≈ 3-8 min chacun la 1re fois), **reprise automatique** : relance la même commande après
+  un Ctrl+C, un crash ou l'ajout de fichiers → seuls les nouveaux / modifiés sont traités
+- `--only "Amelie*,*Story*"` : seulement certains fichiers · `--with-full` : + analyse du morceau entier (pour `dna.py`)
+- `--prune-stems` : après un PASS, efface les gros fichiers intermédiaires (≈ 0,55 Go → ≈ 80 Mo par morceau)
+- Optionnel : un `tags.csv` dans le dossier (`filename;style;note;favorite`) → repris dans le résumé
+- Le lot s'arrête tout seul s'il reste moins de 20 Go libres (`--min-free-gb`)
+
+Résultats dans `out\_batch\<nom du dossier>\` :
+- `summary.md` / `summary.csv` (Excel) : verdict, BPM, tonalité, métriques, signaux (rumble, swing, acid, clap)
+- Aperçus à écouter sur le téléphone : `out\_previews\batch\<slug>.mp3`
+- Des FAIL ? Lance `.\.venv\Scripts\python.exe tools\t2s_batch.py triage <nom du lot>` → envoie à Claude
+  **seulement** les 1 à 3 `diag.md` indiqués par classe d'échec (pas tous)
+- Libérer de la place après coup : `tools\t2s_batch.py prune <nom du lot>` (`--dry-run` pour voir avant)
+
 ## 2. Écouter / jouer
 
 **Comparer à l'original** : `out\mon_morceau\compare_ab_strudel.wav` (4 mesures original / 4 mesures Strudel, en alternance).
@@ -72,7 +92,7 @@ Réarranger : tableau `PLAN` en haut du `.strudel.js` (1 case = 4 mesures, lettr
 
 ## 3 bis. Bibliothèque de samples (tes packs dans `Music\`)
 
-Indexer (à relancer quand tu ajoutes un pack — liste `PACKS` en haut du script ; ~11 min la 1re fois, puis seulement les nouveaux fichiers) :
+Indexer (à relancer quand tu ajoutes un pack — voir 3 ter ; ~11 min la 1re fois, puis seulement les nouveaux fichiers) :
 ```powershell
 .\.venv\Scripts\python.exe tools\sampleindex.py scan
 ```
@@ -96,6 +116,40 @@ Générer avec tes packs (seulement les packs dont la licence autorise la sortie
 - `--lib-pack ghosthack` : un seul pack · `--lib-allow-unknown` : + packs à licence inconnue (SAS019, SINEE)
 - `--lib-hook` : hook joué par un one-shot synthé · `--lib-loops` : boucle top/perc si BPM à ±2
 - Dans Strudel : `serve_samples.py` sert aussi les packs (lecture seule) → noms `lib_kick:0…`, `lib_clap:…` (licence OK) et `libx_…` (perso / inconnue)
+
+## 3 ter. Ajouter des packs
+
+**Dépose chaque pack dans son propre dossier** sous `C:\Users\Jo'\Music\Samples\` (ex. `Music\Samples\Mon Pack\`),
+avec son fichier de licence (.txt / .pdf) s'il y en a un, puis :
+```powershell
+.\.venv\Scripts\python.exe tools\sampleindex.py scan
+```
+Seuls les nouveaux fichiers sont analysés ; les noms existants (`lib_kick:14`…) **ne bougent pas** (les nouveaux sons
+sont ajoutés à la suite) → tes morceaux déjà générés jouent toujours les mêmes sons.
+
+Un autre dossier racine (autre disque…) :
+```powershell
+.\.venv\Scripts\python.exe tools\sampleindex.py roots add "E:\Packs" --licence ok
+```
+(`--licence ok|personal|unknown` force la licence de tous ses packs ; sinon lue dans les .txt/.pdf).
+Voir les racines / packs : `tools\sampleindex.py roots list` · couper une racine : `roots disable <nom>` puis `scan`.
+⚠️ Une racine **hors de `Music\`** marche dans Strudel mais pas dans le rendu WAV de `generate.py`.
+
+**Avant de publier un morceau généré** : registre des licences de tous les samples utilisés (+ crédits CC-BY) :
+```powershell
+.\.venv\Scripts\python.exe tools\sampleindex.py ledger gww-c1-v2-lib --write
+```
+→ `OK pour publier` ou la liste des problèmes (son perso / NC, sample renommé, samples extraits d'une ref…).
+
+**Freesound (optionnel)** : il faut une clé API (`https://freesound.org/apiv2/apply`) :
+```powershell
+$env:FREESOUND_API_KEY = "ta_clé"
+.\.venv\Scripts\python.exe tools\freesound_import.py search "techno kick" --limit 20 --dry-run
+```
+Sans `--dry-run` : télécharge les aperçus (mp3) dans `Music\Samples\Freesound\` + une fiche `.json` par son
+(auteur, licence, lien) ; CC0 seulement (`--ccby` : + CC-BY, à créditer ; jamais NC). Puis `sampleindex.py scan`.
+⚠️ L'API Freesound est **non commerciale** (sauf accord avec l'UPF) : OK pour tester / perso ; pour une sortie,
+télécharge plutôt les sons CC0 à la main sur freesound.org (et garde leur lien).
 
 ## 4. Astuces live Strudel
 

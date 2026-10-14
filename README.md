@@ -10,7 +10,7 @@ Doc détaillée du pipeline : [tools/track2strudel_README.md](tools/track2strude
 
 | Dossier | Contenu |
 |---|---|
-| `tools/` | `t2s.py` / `t2s.bat` (commande unique), `check_golden.py` + `golden.json` (non-régression), `t2s_params.py` (constantes), `track2strudel.py`, `extract_samples.py`, `render_strudel.py`, `serve_samples.py`, … |
+| `tools/` | `t2s.py` / `t2s.bat` (commande unique), `t2s_batch.py` (lots), `check_golden.py` + `golden.json` (non-régression), `t2s_params.py` (constantes), `track2strudel.py`, `extract_samples.py`, `render_strudel.py`, `serve_samples.py`, `sampleindex.py` + `library_roots.json` (bibliothèque), `freesound_import.py`, … |
 | `tools/_archive/` | Anciens scripts (v1, batchs `.sh` v2 → v2.4) |
 | `tools/strudel-render/` | Projet Node (rendu headless Strudel via playwright-core) |
 | `docs/` | Notes (veille open source, etc.) |
@@ -34,7 +34,11 @@ npm install --ignore-scripts
 ```powershell
 tools\t2s.bat "refs\morceau.mp3" --auto-excerpt --slug morceau     # ou --start 97.1 --dur 60, ou --full
 tools\t2s.bat golden                                                # non-régression des 5 refs (tools\golden.json)
+tools\t2s.bat batch "D:\Mes WAV" --prune-stems                      # un dossier entier, reprise auto, résumé + triage des FAIL
 ```
+Lot : `tools\t2s_batch.py` → `out\_batch\<lot>\summary.md|csv`, aperçus `out\_previews\batch\*.mp3`,
+`t2s_batch.py triage <lot>` (1 à 3 diag.md par classe d'échec), `prune <lot>` (≈ 80 Mo gardés par morceau). Détails :
+section « Lot de morceaux » de [tools/track2strudel_README.md](tools/track2strudel_README.md).
 (`t2s.bat` = venv + node dans le PATH + `python tools\t2s.py ...` ; glisser-déposer un audio sur le .bat = `--auto-excerpt`.)
 
 `t2s.py` enchaîne stems → détections → code → samples/boucles → rendu Strudel headless → **verdict PASS/FAIL**
@@ -59,6 +63,15 @@ Design : [docs/generator-design.md](docs/generator-design.md).
 `--kit own` = sons libres (banques Strudel TR-909/808 + synthés), publiable ; `--kit inspi` = samples extraits
 de la ref (écoute perso uniquement, nécessite `samples\`). Garde-fou : la basse et le stab générés sont comparés
 à toutes les boucles 1-2 mesures de la source (rapport `report.json`).
+
+## Bibliothèque de samples
+
+`tools\sampleindex.py` indexe les packs des racines de `tools\library_roots.json` (les 7 packs de `Music\` +
+`Music\Samples\<pack>\` : dépose un pack, puis `scan`) ; `roots list|add|disable`, `ledger <morceau généré>` (licences
++ crédits avant publication). `serve_samples.py` sert en lecture seule les packs des racines actives.
+`tools\freesound_import.py` (optionnel, clé `FREESOUND_API_KEY`) : sons CC0 / CC-BY + fiche licence ; API Freesound
+non commerciale sauf accord UPF → pour une sortie, télécharger les CC0 à la main. Voir `docs\MEMO.md` § 3 ter et
+[docs/generator-design.md](docs/generator-design.md) § 7.
 
 ## Non versionné (copyright)
 

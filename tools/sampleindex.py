@@ -5,10 +5,17 @@
     .venv\\Scripts\\python.exe tools\\sampleindex.py query --cat kick --punch high --bright low [--bpm 124] [--key Am]
         [--pack Samplesound] [--loop|--oneshot] [--licence ok|any] [--limit 10]
     .venv\\Scripts\\python.exe tools\\sampleindex.py similar <file.wav | gww_kick[:n] | lib_kick:n> [--cat kick] [--limit 10]
+    .venv\\Scripts\\python.exe tools\\sampleindex.py roots list | roots add <path> [--licence ok|personal|unknown] [--name N]
+        | roots enable|disable|remove <name>
+    .venv\\Scripts\\python.exe tools\\sampleindex.py ledger <out\\gen\\<track> folder> [--write]
 
-scan   : every audio file of the packs in PACKS (under C:\\Users\\Jo'\\Music) -> out/library/index.json (text, committed;
+roots  : tools/library_roots.json (see tools/libroots.py): several root folders; a root lists its packs explicitly
+         (the historical "music" root = the 7 packs under C:\\Users\\Jo'\\Music) or every sub-folder is a pack
+         (the "samples" root C:\\Users\\Jo'\\Music\\Samples: drop a pack folder there, then `scan`).
+scan   : every audio file of the packs of the enabled roots -> out/library/index.json (text, committed;
          incremental: unchanged files are not re-analysed unless --full) + samples/library/strudel.json (Strudel sample
-         map lib_<cat> / libx_<cat>, n = rank within the category by a quality score; the URLs point at the ORIGINAL
+         map lib_<cat> / libx_<cat>, n = STABLE slot (quality rank at the 1st scan, new files appended; --rerank
+         re-ranks everything); the URLs point at the ORIGINAL
          files, served read-only by tools/serve_samples.py under http://localhost:5432/lib/<pack>/<path>).
          lib_*  = packs whose licence allows commercial releases; libx_* = personal-only / unknown licence.
 Per file: format, sr, duration, channels, peak / RMS / LUFS (BS.1770, files >= 0.4 s) / hit level (RMS of the 1st 100 ms
@@ -18,7 +25,10 @@ Krumhansl) / root note + tuning (pyin) for tonal one-shots; kick fundamental; de
 body / noisiness (+ percentile within the category) and a 96-d embedding (log-mel 40 bands mean+std + 16-point
 envelope) for nearest-neighbour search.
 Licences: the pack's .txt / .pdf (pdftotext if available) are read as DATA and matched against simple rules ->
-status ok / personal_only / unknown (+ restrictions), stored per pack in the index.
+status ok / personal_only / unknown (+ restrictions), stored per pack in the index; a root's licence_override wins.
+Per file: a <file>.json sidecar with a "license" (tools/freesound_import.py) sets that file's own licence (CC0 / CC-BY
+-> ok, + attribution string for CC-BY; NC -> personal_only). Every indexed file keeps pack + licence (+ attribution):
+`ledger` lists the library samples a generated track uses, with their licence / credits, and flags anything non-OK.
 """
 import argparse, base64, concurrent.futures as cf, json, math, os, re, shutil, subprocess, sys, time
 from pathlib import Path
@@ -27,19 +37,14 @@ from urllib.parse import quote
 import numpy as np
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / "tools"))
+import libroots  # noqa: E402
+
 MUSIC = ROOT.parent
 INDEX = ROOT / "out" / "library" / "index.json"
 MANIFEST = ROOT / "samples" / "library" / "strudel.json"
 BASE_URL = "http://localhost:5432/lib/"
-PACKS = [
-    "FREE Riemann Techno Starter Sample Pack 2026 for Ableton and FL Studio",
-    "Ghosthack - AC2025 - Day 1 - Warehouse Techno Sounds 2026",
-    "SAS019_Samplesound_Techno_Volume_3",
-    "SAS023_Samplesound_Techno_Volume_4",
-    "SAS096_Samplesound_Techno_Synths_Vol 1",
-    "SAS131_Samplesound - Atlant - Melodic Techno",
-    "SINEE - Free House Samples",
-]
+PACKS = libroots.DEFAULT_PACKS      # historical "music" root; the real list of roots / packs: tools/library_roots.json
 AUDIO_EXT = {".wav", ".aif", ".aiff", ".flac", ".mp3", ".ogg"}
 BROWSER_EXT = {".wav", ".flac", ".mp3", ".ogg"}       # what WebAudio decodeAudioData reads in Chrome/Edge (no AIFF)
 SR = 22050
@@ -145,6 +150,43 @@ def pack_licence(pdir):
         summ += f" ; à lire : {', '.join(unread)}"
     return {"id": sid, "status": status, "commercial": com, "rules": [h[0] for h in hits], "restrictions": restr,
             "docs_read": read, "docs_unread": unread, "note": LIC_NOTES.get(sid), "summary_fr": summ}
+
+
+def apply_override(L, override):
+    """library_roots.json licence_override (ok | personal | unknown) -> the pack licence dict, forced."""
+    st = libroots.LICENCE_OVERRIDE.get(str(override).lower())
+    if not st:
+        return L
+    L = dict(L, status=st, commercial={"ok": True, "personal_only": False}.get(st), override=override)
+    L["summary_fr"] = {"ok": "libre de droits (forcé dans library_roots.json)",
+                       "personal_only": "usage PERSONNEL uniquement (forcé dans library_roots.json)",
+                       "unknown": "licence inconnue (forcé dans library_roots.json)"}[st]
+    return L
+
+
+cc_licence = libroots.cc_licence
+
+
+def file_licence(path):
+    """per-file licence from a <file>.json sidecar (Freesound importer) -> dict or None."""
+    sc = path.with_suffix(".json")
+    if not sc.exists():
+        sc = path.parent / (path.name + ".json")
+        if not sc.exists():
+            return None
+    try:
+        d = json.loads(sc.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+    if not isinstance(d, dict) or not (d.get("license") or d.get("licence")):
+        return None
+    st, name = cc_licence(d.get("license") or d.get("licence"))
+    attr = d.get("attribution")
+    if not attr and name.startswith("CC-BY"):
+        attr = f"\"{d.get('name') or path.stem}\" by {d.get('author') or d.get('username') or '?'}" \
+               f"{' (' + d['url'] + ')' if d.get('url') else ''} — {name}"
+    return {"licence": st, "licence_name": name, "attribution": attr if name.startswith("CC-BY") else None,
+            "source_url": d.get("url"), "licence_src": "sidecar"}
 
 
 # ---------------------------------------------------------------- keyword rules
@@ -621,8 +663,8 @@ def musical(rel, f, cl):
 
 # ---------------------------------------------------------------- scan
 def analyse_one(args):
-    pack, rel, full = args
-    p = MUSIC / pack / rel
+    pack, rel, full, pdir = args
+    p = Path(pdir) / rel
     t0 = time.time()
     try:
         f = features(p)
@@ -642,19 +684,22 @@ def analyse_one(args):
     return e
 
 
-def list_files():
+def list_files(cfg=None):
+    """-> [(pack key, relative path, pack dir)] over the packs of the enabled roots (tools/library_roots.json)."""
     out = []
-    for pack in PACKS:
-        pd = MUSIC / pack
-        if not pd.is_dir():
-            log("missing pack:", pack)
-            continue
+    cfg = cfg or libroots.load()
+    for r in cfg["roots"]:
+        if r.get("enabled", True) and r.get("packs") is not None:
+            for f in r["packs"]:
+                if not (libroots.root_path(r) / f).is_dir():
+                    log("missing pack:", f)
+    for r, folder, pack, pd in libroots.iter_packs(cfg):
         for p in sorted(pd.rglob("*")):
             if not p.is_file() or p.name.startswith("._") or p.suffix.lower() not in AUDIO_EXT:
                 continue
             if p.suffix.lower() == ".mp3" and re.search(r"demo", p.name, re.I):
                 continue
-            out.append((pack, p.relative_to(pd).as_posix()))
+            out.append((pack, p.relative_to(pd).as_posix(), pd))
     return out
 
 
@@ -707,8 +752,13 @@ def dedupe_aiff(samples):
                 s["dup_of"] = wavs[k]
 
 
-def write_manifest(idx):
-    lic = {p["folder"]: p["licence"]["status"] == "ok" for p in idx["packs"].values()}
+def write_manifest(idx, prev=None):
+    """Strudel sample map. prev = {(pack, path): 'lib_kick:3'} of the previous index: names are STABLE across scans
+    (a generated .strudel.js keeps playing the same files when packs are added): a file keeps its slot, new files are
+    appended (in quality order), the slot of a vanished file keeps its old URL (it then 404s = silence, never another
+    sound). prev None / {} (first scan, `scan --rerank`) = n is the quality rank within the name."""
+    prev = prev or {}
+    inv = {v: k for k, v in prev.items() if v}
     groups = {}
     for i, s in enumerate(idx["samples"]):
         s.pop("strudel", None)
@@ -717,13 +767,27 @@ def write_manifest(idx):
         base = SNAME[s["cat"]]
         if s["kind"] == "loop" and s["cat"] in ("bass", "synth", "pad", "vocal", "fx"):
             base += "loop"
-        name = ("lib_" if lic.get(s["pack"]) else "libx_") + base
+        name = ("lib_" if s.get("licence") == "ok" else "libx_") + base
         groups.setdefault(name, []).append(i)
     man = {"_base": BASE_URL}
     for name in sorted(groups):
         ids = sorted(groups[name], key=lambda i: -idx["samples"][i]["score"])
+        slots, fresh = {}, []
+        for i in ids:
+            s = idx["samples"][i]
+            pn, _, n = (prev.get((s["pack"], s["path"])) or "").partition(":")
+            if pn == name and n.isdigit() and int(n) not in slots:
+                slots[int(n)] = i
+            else:
+                fresh.append(i)
+        top = max([n for n in slots] + [int(v.partition(":")[2]) for v in inv if v.partition(":")[0] == name] + [-1])
+        order = [slots.get(n, ("gone", inv.get(f"{name}:{n}"))) for n in range(top + 1)] + fresh
         man[name] = []
-        for n, i in enumerate(ids):
+        for n, i in enumerate(order):
+            if isinstance(i, tuple):          # vanished file: keep its URL (404 -> silence, not another sound)
+                key = i[1] or ("_gone", f"{name}_{n}")
+                man[name].append(quote(f"{key[0]}/{key[1]}", safe="/"))
+                continue
             s = idx["samples"][i]
             s["strudel"] = f"{name}:{n}"
             man[name].append(quote(f"{s['pack']}/{s['path']}", safe="/"))
@@ -733,23 +797,30 @@ def write_manifest(idx):
 
 
 def cmd_scan(a):
-    files = list_files()
-    log(f"{len(files)} audio files in {len(PACKS)} packs")
-    old = {}
-    if INDEX.exists() and not a.full:
+    cfg = libroots.load()
+    files = list_files(cfg)
+    plist = libroots.iter_packs(cfg)
+    log(f"{len(files)} audio files in {len(plist)} packs ({sum(1 for r in cfg['roots'] if r.get('enabled', True))} enabled roots)")
+    old, prev_names = {}, {}
+    if INDEX.exists():
         try:
             for s in json.loads(INDEX.read_text(encoding="utf-8"))["samples"]:
-                old[(s["pack"], s["path"])] = s
+                prev_names[(s["pack"], s["path"])] = s.get("strudel")
+                if not a.full:
+                    old[(s["pack"], s["path"])] = s
         except Exception:
             pass
+    if a.rerank:
+        prev_names = {}
+        log("--rerank: Strudel names re-assigned by quality (lib_kick:n ...): regenerate the tracks that use the library")
     todo, keep = [], []
-    for pack, rel in files:
-        st = (MUSIC / pack / rel).stat()
+    for pack, rel, pd in files:
+        st = (pd / rel).stat()
         o = old.get((pack, rel))
         if o and "error" not in o and o.get("size") == st.st_size and o.get("mtime") == int(st.st_mtime):
             keep.append(o)
         else:
-            todo.append((pack, rel, a.full))
+            todo.append((pack, rel, a.full, str(pd)))
     log(f"{len(keep)} unchanged, {len(todo)} to analyse with {a.workers} workers")
     res = []
     t0 = time.time()
@@ -761,28 +832,49 @@ def cmd_scan(a):
                     log(f"  {k + 1}/{len(todo)}  {time.time() - t0:.0f} s")
     samples = keep + res
     samples.sort(key=lambda s: (s["pack"], s["path"]))
-    packs = {}
-    for pack in PACKS:
-        if (MUSIC / pack).is_dir():
-            L = pack_licence(MUSIC / pack)
-            packs[L["id"]] = {"folder": pack, "licence": L, "n_files": sum(1 for s in samples if s["pack"] == pack)}
-    ok = {p["folder"]: p["licence"]["status"] == "ok" for p in packs.values()}
+    packs, pid_of, pdir_of = {}, {}, {}
+    for r, folder, key, pd in plist:
+        n = sum(1 for s in samples if s["pack"] == key)
+        if not n:
+            continue
+        L = pack_licence(pd)
+        if r.get("licence_override"):
+            L = apply_override(L, r["licence_override"])
+        pid = L["id"]
+        k = 2
+        while pid in packs:          # same short id in two roots
+            pid = f"{L['id']}_{k}"; k += 1
+        L["id"] = pid
+        packs[pid] = {"folder": key, "root": r["name"], "dir": str(pd), "licence": L, "n_files": n}
+        pid_of[key], pdir_of[key] = pid, pd
     good = [s for s in samples if "error" not in s]
     for s in good:
-        s["pack_id"] = slug(s["pack"])
+        s["pack_id"] = pid_of[s["pack"]]
         s["licence"] = packs[s["pack_id"]]["licence"]["status"]
+        for k in ("licence_name", "attribution", "source_url", "licence_src"):
+            s.pop(k, None)
+        fl = file_licence(pdir_of[s["pack"]] / s["path"])
+        if fl:
+            s.update({k: v for k, v in fl.items() if v is not None})
+    for pid, pk in packs.items():      # e.g. Freesound: no licence doc, but every file has its own licence sidecar
+        mine = [s for s in good if s["pack_id"] == pid]
+        if pk["licence"]["status"] == "unknown" and mine and all(s.get("licence_src") == "sidecar" for s in mine):
+            nok = sum(s["licence"] == "ok" for s in mine)
+            pk["licence"]["summary_fr"] = f"licence PAR FICHIER (sidecars .json) : {nok}/{len(mine)} OK"
     dedupe_aiff(good)
     descriptor_pct(good)
     for s in good:
-        s["score"] = quality(s, ok.get(s["pack"], False))
-    E = np.stack([emb_decode(s["emb"]) for s in good])
+        s["score"] = quality(s, s["licence"] == "ok")
+    E = np.stack([emb_decode(s["emb"]) for s in good]) if good else np.zeros((1, EMB_DIM))
     idx = {"version": 1, "generated": time.strftime("%Y-%m-%d %H:%M"), "music_root": str(MUSIC), "base_url": BASE_URL,
+           "roots": [{"name": r["name"], "path": str(libroots.root_path(r)), "enabled": r.get("enabled", True),
+                      "url_prefix": libroots.prefix(r)} for r in cfg["roots"]],
            "packs": packs,
            "embedding": {"dims": EMB_DIM, "desc": "40 log-mel mean/80 + 40 std/20 + 16-pt log envelope /60 (float16 b64)",
                          "mean": [round(float(x), 4) for x in E.mean(0)],
                          "std": [round(float(x), 4) for x in E.std(0) + 1e-4]},
            "samples": samples}
-    counts = write_manifest(idx)
+    counts = write_manifest(idx, prev_names)
     INDEX.parent.mkdir(parents=True, exist_ok=True)
     INDEX.write_text(json.dumps(idx, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     log(f"wrote {INDEX.relative_to(ROOT)} ({INDEX.stat().st_size // 1024} KB), {MANIFEST.relative_to(ROOT)}: "
@@ -790,6 +882,18 @@ def cmd_scan(a):
     err = [s for s in samples if "error" in s]
     if err:
         log(f"{len(err)} unreadable:", *[f"{s['pack']}/{s['path']}: {s['error']}" for s in err[:10]])
+    new_packs = [p["folder"] for p in packs.values() if not any(o[0] == p["folder"] for o in old)]
+    if old and new_packs:
+        log("new packs:", ", ".join(f"{p} ({packs[pid_of[p]]['licence']['status']})" for p in new_packs))
+
+
+def sample_file(idx, s):
+    """absolute path of an indexed sample (pack dir from the index, else from library_roots.json)."""
+    p = (idx.get("packs") or {}).get(s.get("pack_id") or "", {})
+    if p.get("folder") == s["pack"] and p.get("dir"):
+        return Path(p["dir"]) / s["path"]
+    d = libroots.pack_dirs(enabled_only=False).get(s["pack"])
+    return (d or MUSIC / s["pack"]) / s["path"]
 
 
 # ---------------------------------------------------------------- load / query / similar
@@ -879,7 +983,12 @@ def resolve_ref(ref):
         return p
     name, _, n = ref.partition(":")
     n = int(n or 0)
-    for man_path, base in ((MANIFEST, MUSIC), (ROOT / "samples" / "strudel.json", ROOT / "samples")):
+    if name.startswith(("lib_", "libx_")) and INDEX.exists():
+        idx = load_index()
+        hit = [s for s in idx["samples"] if s.get("strudel") == f"{name}:{n}"]
+        if hit:
+            return sample_file(idx, hit[0])
+    for man_path, base in ((ROOT / "samples" / "strudel.json", ROOT / "samples"),):
         if not man_path.exists():
             continue
         man = json.loads(man_path.read_text(encoding="utf-8"))
@@ -989,7 +1098,7 @@ def pick_lib_kit(bpm, bass_root, like=None, packs=None, seed=None, allow_unknown
         else:
             s = draw(sorted(cand, key=lambda x: -x["score"]), 8)
         used.add(s["path"])
-        hit = hit_level(MUSIC / s["pack"] / s["path"], LANE_HP[lane]) if lane in LANE_HP and ref is not None else s["hit_db"]
+        hit = hit_level(sample_file(idx, s), LANE_HP[lane]) if lane in LANE_HP and ref is not None else s["hit_db"]
         sel[lane] = {"strudel": s["strudel"], "cat": s["cat"], "pack": s.get("pack_id"), "licence": s.get("licence"),
                      "path": f"{s['pack']}/{s['path']}", "hit_db": hit, "conf": s["conf"],
                      "root_midi": s.get("root_midi"), "sub": s.get("sub"),
@@ -1006,6 +1115,10 @@ def pick_lib_kit(bpm, bass_root, like=None, packs=None, seed=None, allow_unknown
                            "sub": s.get("sub")}
         else:
             sel["loop"] = {"skipped": f"no top loop at {bpm}+-2 BPM (verified, 1-16 bars, licence {licence})"}
+    far = sorted({v["path"].split("/")[0] for v in sel.values() if v.get("path", "").startswith("@")})
+    if far:   # render.mjs --lib-root = Music\: a root outside Music\ is served live, not rendered offline
+        log(f"warning: {', '.join(far)} is outside C:\\Users\\Jo'\\Music: playable in Strudel (serve_samples.py) but "
+            f"silent in generate.py's offline render — put the root under Music\\ (e.g. Music\\Samples)")
     return sel
 
 
@@ -1026,7 +1139,7 @@ def cmd_stats(a):
     print("\npacks:")
     for pid, p in idx["packs"].items():
         L = p["licence"]
-        print(f"  {pid:10s} {p['n_files']:4d} files  licence={L['status']:13s} {L['summary_fr']}")
+        print(f"  {pid:10s} {p['n_files']:4d} files  licence={L['status']:13s} {L['summary_fr']}  [root {p.get('root', 'music')}]")
         for r in L["restrictions"]:
             print(f"  {'':10s}      - {r}")
         if L.get("note"):
@@ -1057,6 +1170,142 @@ def cmd_stats(a):
               f"{s.get('pack_id')}/{s['path']}")
 
 
+# ---------------------------------------------------------------- roots
+def cmd_roots(a):
+    cfg = libroots.load()
+    if a.action == "list":
+        idx = json.loads(INDEX.read_text(encoding="utf-8")) if INDEX.exists() else {"samples": [], "packs": {}}
+        nfile = {}
+        for s_ in idx["samples"]:
+            nfile[s_["pack"]] = nfile.get(s_["pack"], 0) + 1
+        print(f"config: {libroots.CONFIG}" + ("" if libroots.CONFIG.exists() else "  (absent: defaults)"))
+        for r in cfg["roots"]:
+            rp = libroots.root_path(r)
+            packs = libroots.iter_packs({"roots": [dict(r, enabled=True)]})
+            print(f"\n[{'x' if r.get('enabled', True) else ' '}] {r['name']:10s} {rp}{'' if rp.is_dir() else '  (MISSING)'}"
+                  f"  prefix '{libroots.prefix(r)}'  licence {r.get('licence_override') or 'from pack docs'}"
+                  f"  packs {'explicit' if r.get('packs') is not None else 'auto (every sub-folder)'}")
+            for _, folder, key, _d in packs:
+                n = nfile.get(key)
+                print(f"      {folder}  -> " + (f"{n} files" if n is not None else "not indexed yet (run scan)"))
+            if not packs:
+                print("      (no pack yet)")
+        return
+    if a.action == "add":
+        rp = Path(a.path).expanduser().resolve()
+        if any(libroots.root_path(r) == rp for r in cfg["roots"]):
+            sys.exit(f"{rp} is already a root")
+        name = a.name or libroots.name_of(rp)
+        if any(r["name"] == name for r in cfg["roots"]):
+            sys.exit(f"root name {name!r} already used: pass --name")
+        r = {"name": name, "path": str(rp), "enabled": True}
+        if a.licence:
+            r["licence_override"] = a.licence
+        if not rp.is_dir():
+            log(f"warning: {rp} does not exist yet: create it, then drop pack folders into it")
+        cfg["roots"].append(r)
+        libroots.save(cfg)
+        log(f"root {name!r} added to {libroots.CONFIG.name}; every sub-folder of {rp} is a pack. Now: sampleindex.py scan")
+        return
+    hit = [r for r in cfg["roots"] if r["name"] == a.path]       # enable / disable
+    if not hit:
+        sys.exit(f"no root named {a.path!r} (see: roots list)")
+    if a.action == "remove":
+        cfg["roots"].remove(hit[0])
+        libroots.save(cfg)
+        log(f"root {a.path!r} removed from the config (no file touched). Now: sampleindex.py scan")
+        return
+    hit[0]["enabled"] = a.action == "enable"
+    libroots.save(cfg)
+    log(f"root {a.path!r} {a.action}d. Now: sampleindex.py scan (index, manifest and server follow the config)")
+
+
+# ---------------------------------------------------------------- ledger (licences of a generated track)
+LIB_NAME_RX = re.compile(r"\b(libx?_[a-z]+)(?::(\d+))?\b")
+
+
+def cmd_ledger(a):
+    d = Path(a.folder)
+    if not d.is_dir():
+        d = ROOT / "out" / "gen" / a.folder
+    if not d.is_dir():
+        sys.exit(f"{a.folder}: not a folder (out\\gen\\<track>)")
+    idx = load_index()
+    by_path = {f"{s['pack']}/{s['path']}": s for s in idx["samples"] if "error" not in s}
+    by_name = {s["strudel"]: s for s in idx["samples"] if s.get("strudel")}
+    used, problems, notes = {}, [], []
+    rep_f = d / "report.json"
+    rep_lib = {}
+    if rep_f.exists():
+        rep = json.loads(rep_f.read_text(encoding="utf-8"))
+        rep_lib = {k: v for k, v in (rep.get("lib") or {}).items() if isinstance(v, dict) and v.get("path")}
+    for lane, e in rep_lib.items():
+        s = by_path.get(e["path"])
+        u = used.setdefault(e["path"], {"names": set(), "s": s})
+        u["names"].add(e.get("strudel"))
+        if s is None:
+            problems.append(f"{e['path']}: plus dans l'index (pack supprimé / désactivé ?) ; licence à la génération : "
+                            f"{e.get('licence')}")
+        elif e.get("strudel") and s.get("strudel") != e["strudel"]:
+            problems.append(f"{e['strudel']} : nom changé depuis la génération (index re-scanné / nouveau pack) ; ce fichier "
+                            f"s'appelle maintenant {s.get('strudel')}, le .strudel.js joue donc un AUTRE son -> régénère "
+                            f"le morceau (generate.py) avant de publier")
+    js = sorted(d.glob("*.strudel.js"))
+    for f in js:
+        body = "\n".join(ln for ln in f.read_text(encoding="utf-8").splitlines() if not ln.lstrip().startswith("//"))
+        for nm in sorted({f"{m.group(1)}:{m.group(2) or 0}" for m in LIB_NAME_RX.finditer(body)}):
+            if any(nm in u["names"] for u in used.values()):
+                continue
+            s = by_name.get(nm)
+            if s is None:
+                problems.append(f"{f.name}: {nm} introuvable dans l'index actuel"); continue
+            used.setdefault(f"{s['pack']}/{s['path']}", {"names": set(), "s": s})["names"].add(nm)
+        if "localhost:5432/strudel.json" in body:
+            problems.append(f"{f.name}: samples extraits d'une ref (samples/strudel.json) = usage PERSO uniquement")
+        if ".bank(" in body:
+            notes.append(f"{f.name}: banques Strudel intégrées (.bank(...)) sans licence déclarée (docs/oss-scout-samples.md)")
+        if re.search(r"samples\(\s*['\"](github:|https?://(?!localhost))", body):
+            notes.append(f"{f.name}: samples chargés depuis une source externe : vérifier leur licence")
+    print(f"ledger {d}  ({len(js)} .strudel.js, report.json {'oui' if rep_f.exists() else 'non'}, index du {idx['generated']})")
+    rows, credits = [], []
+    for path, u in sorted(used.items()):
+        s = u["s"] or {}
+        lic = s.get("licence", "?")
+        det = s.get("licence_name") or {"ok": "pack libre de droits", "personal_only": "pack perso",
+                                         "unknown": "pack inconnu"}.get(lic, lic)
+        attr = s.get("attribution")
+        if attr:
+            credits.append(attr)
+        if lic != "ok":
+            problems.append(f"{path}: licence {lic}")
+        rows.append((",".join(sorted(x for x in u["names"] if x)), s.get("pack_id", "?"), lic, det, attr or "", path))
+        print(f"  {rows[-1][0]:18s} {rows[-1][1]:10s} {lic:13s} {det:22s} {path}" + ("" if lic == "ok" else "  <-- NON OK"))
+    if not used:
+        print("  (aucun sample de la bibliothèque)")
+    if credits:
+        print("\nÀ créditer (CC-BY) :")
+        for c in sorted(set(credits)):
+            print("  - " + c)
+    for n in notes:
+        print("note : " + n)
+    for p_ in problems:
+        print("PROBLÈME : " + p_)
+    ok = not problems
+    print("\nverdict : " + (("OK pour publier côté samples" + (" (voir notes)" if notes else "")) if ok
+                            else f"{len(problems)} problème(s) : ne pas publier en l'état"))
+    if a.write:
+        L = [f"# Licences des samples — {d.name}", "", f"index du {idx['generated']}", "",
+             "| nom Strudel | pack | licence | détail | attribution | fichier |", "|---|---|---|---|---|---|"]
+        L += ["| " + " | ".join(str(x) for x in r) + " |" for r in rows]
+        if credits:
+            L += ["", "## À créditer", *[f"- {c}" for c in sorted(set(credits))]]
+        L += ["", *[f"- note : {n}" for n in notes], *[f"- **problème** : {p_}" for p_ in problems],
+              "", "verdict : " + ("OK" if ok else "NON OK")]
+        (d / "LICENCES.md").write_text("\n".join(L) + "\n", encoding="utf-8")
+        print(f"-> {d / 'LICENCES.md'}")
+    sys.exit(0 if ok else 1)
+
+
 def main():
     try:
         sys.stdout.reconfigure(errors="replace")
@@ -1067,6 +1316,8 @@ def main():
     p = sp.add_parser("scan")
     p.add_argument("--workers", type=int, default=max(1, (os.cpu_count() or 4) - 1))
     p.add_argument("--full", action="store_true", help="re-analyse every file")
+    p.add_argument("--rerank", action="store_true", help="re-assign the Strudel names by quality (changes lib_x:n of "
+                   "existing tracks!); default = stable names, new files appended")
     p = sp.add_parser("stats")
     p.add_argument("--spot", type=int, default=20)
     p.add_argument("--seed", type=int, default=7)
@@ -1086,8 +1337,19 @@ def main():
             p.add_argument("--bpm", type=float)
             p.add_argument("--bpm-tol", type=float, default=2.0)
             p.add_argument("--key", help="Am, F#m, 8A ... (relative major/minor also matches)")
+    p = sp.add_parser("roots", help="list / add / enable / disable library roots (tools/library_roots.json)")
+    p.add_argument("action", choices=["list", "add", "enable", "disable", "remove"])
+    p.add_argument("path", nargs="?", help="add: folder path ; enable/disable: root name")
+    p.add_argument("--name", help="add: root name (default: from the folder name)")
+    p.add_argument("--licence", choices=["ok", "personal", "unknown"], help="add: force the licence of every pack of the root")
+    p = sp.add_parser("ledger", help="licences / credits of the library samples used by a generated track")
+    p.add_argument("folder", help="out\\gen\\<track> (or just <track>)")
+    p.add_argument("--write", action="store_true", help="also write <folder>/LICENCES.md")
     a = ap.parse_args()
-    {"scan": cmd_scan, "stats": cmd_stats, "query": cmd_query, "similar": cmd_similar}[a.cmd](a)
+    if a.cmd == "roots" and a.action != "list" and not a.path:
+        ap.error(f"roots {a.action} needs a path / name")
+    {"scan": cmd_scan, "stats": cmd_stats, "query": cmd_query, "similar": cmd_similar, "roots": cmd_roots,
+     "ledger": cmd_ledger}[a.cmd](a)
 
 
 if __name__ == "__main__":

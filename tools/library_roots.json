@@ -1,0 +1,26 @@
+{
+ "roots": [
+  {
+   "name": "music",
+   "path": "C:\\Users\\Jo'\\Music",
+   "enabled": true,
+   "url_prefix": "",
+   "packs": [
+    "FREE Riemann Techno Starter Sample Pack 2026 for Ableton and FL Studio",
+    "Ghosthack - AC2025 - Day 1 - Warehouse Techno Sounds 2026",
+    "SAS019_Samplesound_Techno_Volume_3",
+    "SAS023_Samplesound_Techno_Volume_4",
+    "SAS096_Samplesound_Techno_Synths_Vol 1",
+    "SAS131_Samplesound - Atlant - Melodic Techno",
+    "SINEE - Free House Samples"
+   ],
+   "note": "packs historiques (liste explicite : Music\\ contient aussi ALGORAVE, des enregistrements...)"
+  },
+  {
+   "name": "samples",
+   "path": "C:\\Users\\Jo'\\Music\\Samples",
+   "enabled": true,
+   "note": "dépose ici un pack = un sous-dossier (licence lue dans ses .txt / .pdf)"
+  }
+ ]
+}

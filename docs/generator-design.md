@@ -117,7 +117,19 @@ sidechain HPF 120 Hz, knee 6 dB, att 20 ms / rel 200 ms) → gain → soft clip 
 
 ## 7. Bibliothèque de samples + kit `lib` (tools/sampleindex.py)
 
-**Index** (`scan`, incrémental sur taille + mtime, 7 process) : packs listés dans `PACKS` sous `Music\` (lecture seule ;
+**Racines (2026-10)** : `tools/library_roots.json` (`tools/libroots.py`, `sampleindex.py roots list|add|enable|disable|remove`) :
+racine `music` = les 7 packs historiques (liste explicite, clé de pack = nom du dossier, inchangée), racine `samples` =
+`Music\Samples\` dont **chaque sous-dossier est un pack** (auto-détecté au `scan`), autres racines au choix (`licence_override`
+ok / personal / unknown). Clé de pack = `<chemin relatif à Music>/<pack>` (ex. `Samples/Mon Pack`) ou `@<racine>/<pack>` hors de
+`Music\` (servi en live, mais pas rendu hors ligne par `generate.py` : `render.mjs --lib-root` = `Music\`). **Noms Strudel
+stables** : un fichier garde son `lib_<cat>:n` d'un scan à l'autre, les nouveaux sont ajoutés en fin de liste, un fichier
+disparu garde son URL (404 = silence, jamais un autre son) ; `scan --rerank` re-classe tout (à éviter si des morceaux
+existent). **Licence par fichier** : un sidecar `<fichier>.json` avec `license` (importeur `tools/freesound_import.py`) →
+CC0 / CC-BY = ok (+ `attribution`), NC = perso. **Registre** : `sampleindex.py ledger <out\gen\morceau> [--write]` = samples
+de la bibliothèque utilisés (report.json + noms `lib_*` du .strudel.js), licence, crédits, et alerte si un nom a changé,
+si un fichier a disparu, si le code charge des samples extraits d'une ref ou des banques Strudel sans licence.
+
+**Index** (`scan`, incrémental sur taille + mtime, 7 process) : packs des racines actives (lecture seule ;
 fichiers `._*` AppleDouble, `.DS_Store` et démos mp3 ignorés) → `out/library/index.json` (versionné, texte, pas d'audio).
 Par fichier : format / sr / canaux / durée, crête, RMS, LUFS (BS.1770 de `generate.lufs`, fichiers ≥ 0,4 s), `hit_db`
 (RMS des 100 ms après le pic : sert à égaliser les gains du kit). Analyse à 22,05 kHz mono, 32 s max.

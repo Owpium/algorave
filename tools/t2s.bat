@@ -4,6 +4,7 @@ rem   tools\t2s.bat "refs\morceau.mp3" --start 97.1 --dur 60
 rem   tools\t2s.bat "refs\morceau.mp3" --auto-excerpt --slug morceau
 rem   glisser-deposer un fichier audio sur ce .bat = --auto-excerpt (fenetre gardee ouverte a la fin)
 rem   tools\t2s.bat golden   = tools\check_golden.py (non-regression des 5 refs)
+rem   tools\t2s.bat batch "D:\mes wavs" [--prune-stems ...]   = tools\t2s_batch.py (lot de morceaux, reprise auto)
 setlocal
 set "ROOT=%~dp0.."
 set "PATH=%LOCALAPPDATA%\nodejs;%PATH%"
@@ -15,6 +16,7 @@ if "%~1"=="" (
   pause
   exit /b
 )
+if /i "%~1"=="batch" goto :batch
 if /i "%~1"=="golden" (
   python tools\check_golden.py %2 %3 %4 %5 %6 %7 %8 %9
   exit /b
@@ -25,3 +27,16 @@ if "%~2"=="" (
   exit /b
 )
 python tools\t2s.py %*
+exit /b
+
+:batch
+shift
+set "ARGS="
+:batchloop
+if "%~1"=="" goto :batchrun
+set ARGS=%ARGS% %1
+shift
+goto :batchloop
+:batchrun
+python tools\t2s_batch.py %ARGS%
+exit /b
