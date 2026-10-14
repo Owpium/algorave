@@ -1,0 +1,425 @@
+{
+ "name": "gww-c1-v2-lib",
+ "version": 2,
+ "params": {
+  "dna": "out/gen/gww-c1-v2/dna.json",
+  "name": "gww-c1-v2-lib",
+  "bpm": 123.0,
+  "key": "10A",
+  "seed": 11,
+  "energy": 0.75,
+  "length_min": 6.0,
+  "intro_bars": 16,
+  "outro_bars": 16,
+  "kit": "lib",
+  "lib_like": "gww",
+  "lib_pack": null,
+  "lib_seed": null,
+  "lib_allow_unknown": false,
+  "lib_loops": true,
+  "lib_hook": false,
+  "lib_bass": "auto",
+  "no_render": false,
+  "no_master": false,
+  "no_stems": false,
+  "no_mp3": false
+ },
+ "bpm": 123,
+ "key": "Bm",
+ "camelot": "10A",
+ "bars": 184,
+ "minutes": 5.98,
+ "sections": [
+  [
+   "intro",
+   16
+  ],
+  [
+   "groove",
+   40
+  ],
+  [
+   "brk",
+   8
+  ],
+  [
+   "grooveB",
+   24
+  ],
+  [
+   "break",
+   16
+  ],
+  [
+   "rise",
+   8
+  ],
+  [
+   "drop",
+   32
+  ],
+  [
+   "groove2",
+   24
+  ],
+  [
+   "outro",
+   16
+  ]
+ ],
+ "timeline": [
+  {
+   "section": "intro",
+   "bars": [1, 16],
+   "start": "0:00",
+   "cells": [
+    "K",
+    "K H",
+    "K H P b",
+    "K C H P b"
+   ]
+  },
+  {
+   "section": "groove",
+   "bars": [17, 56],
+   "start": "0:31",
+   "cells": [
+    "K C H P B",
+    "K C H P B",
+    "K C H P B Y",
+    "K C H P B Y M",
+    "K C H O P B Y W",
+    "K C H O P B Y W",
+    "K C H O P B V Y W",
+    "K C H O P B V Y W M",
+    "K C H P B V Y",
+    "K C H P B V Y"
+   ]
+  },
+  {
+   "section": "brk",
+   "bars": [57, 64],
+   "start": "1:49",
+   "cells": [
+    "H b y X D",
+    "C H b Y X R"
+   ]
+  },
+  {
+   "section": "grooveB",
+   "bars": [65, 88],
+   "start": "2:04",
+   "cells": [
+    "K C H S B V Y",
+    "K C H S B V Y",
+    "K C H S B V Y X",
+    "K C H S B V Y X",
+    "K C H P S B Y X",
+    "K C H P S B Y X"
+   ]
+  },
+  {
+   "section": "break",
+   "bars": [89, 104],
+   "start": "2:51",
+   "cells": [
+    "y X D",
+    "y X D",
+    "H y X D",
+    "H b Y X D"
+   ]
+  },
+  {
+   "section": "rise",
+   "bars": [105, 112],
+   "start": "3:22",
+   "cells": [
+    "H b Y D R",
+    "C H b Y D R"
+   ]
+  },
+  {
+   "section": "drop",
+   "bars": [113, 144],
+   "start": "3:38",
+   "cells": [
+    "K C H O P S B Y X",
+    "K C H O P S B Y X",
+    "K C H O P S B V Y X",
+    "K C H O P S B V Y X M",
+    "K C H S B V Y X",
+    "K C H S B V Y X",
+    "K C H B V Y X",
+    "K C H B V Y X"
+   ]
+  },
+  {
+   "section": "groove2",
+   "bars": [145, 168],
+   "start": "4:40",
+   "cells": [
+    "K C H O P B V Y",
+    "K C H O P B V Y",
+    "K C H O P B V",
+    "K C H O P B V M",
+    "K C H P S B V",
+    "K C H P S B V"
+   ]
+  },
+  {
+   "section": "outro",
+   "bars": [169, 184],
+   "start": "5:27",
+   "cells": [
+    "K C H P S",
+    "K C H P",
+    "K H P",
+    "K H"
+   ]
+  }
+ ],
+ "arrangement_checks": {
+  "longest_static_bars": 8,
+  "bass_open_from_bar": 17,
+  "full_groove_from": "bar 25 = 47 s"
+ },
+ "novelty": {
+  "bass": [
+   {
+    "min_bar_dist": 0.625,
+    "min_2bar_dist": 0.688,
+    "min_bar_onset_dist": 0.5,
+    "min_2bar_onset_dist": 0.625,
+    "tries": 1,
+    "ok": true,
+    "rhythm_ok": true
+   },
+   {
+    "min_bar_dist": 0.75,
+    "min_2bar_dist": 0.778,
+    "min_bar_onset_dist": 0.625,
+    "min_2bar_onset_dist": 0.706,
+    "tries": 1,
+    "ok": true,
+    "rhythm_ok": true
+   }
+  ],
+  "hook": [
+   {
+    "min_bar_dist": 0.571,
+    "min_2bar_dist": 0.722,
+    "min_bar_onset_dist": 0.333,
+    "min_2bar_onset_dist": 0.571,
+    "tries": 1,
+    "ok": true,
+    "rhythm_ok": true
+   },
+   {
+    "min_bar_dist": 0.4,
+    "min_2bar_dist": 0.727,
+    "min_bar_onset_dist": 0.333,
+    "min_2bar_onset_dist": 0.562,
+    "tries": 1,
+    "ok": true,
+    "rhythm_ok": true
+   }
+  ],
+  "threshold": 0.4
+ },
+ "dna_fit": {
+  "drums": {
+   "kick": 0.962,
+   "clap": 0.978,
+   "hh": 0.877
+  },
+  "bass": [
+   {
+    "onset_fit_audio": 0.581,
+    "onset_fit_midi": 0.573,
+    "onsets_per_bar": 7.5,
+    "in_vocab": 1.0
+   },
+   {
+    "onset_fit_audio": 0.616,
+    "onset_fit_midi": 0.511,
+    "onsets_per_bar": 7.5,
+    "in_vocab": 1.0
+   }
+  ],
+  "hook": [
+   {
+    "onset_fit": 0.59
+   },
+   {
+    "onset_fit": 0.617
+   }
+  ]
+ },
+ "hook_sound_own": "stab",
+ "renders": {
+  "lib": {
+   "render": {
+    "cps": 0.5125,
+    "chunks": 23,
+    "raw_peak": 1.643
+   },
+   "errors": [],
+   "premaster": {
+    "wav": "out\\gen\\gww-c1-v2-lib\\gww-c1-v2-lib - 123bpm - 10A (lib premaster).wav",
+    "lufs": -18.17,
+    "true_peak_db": -0.97,
+    "rms_dbfs": -18.69
+   },
+   "master": {
+    "glue_gr_db": 1.5,
+    "drive_db": 19.28,
+    "limiter_max_gr_db": 2.44,
+    "lufs": -9.19,
+    "true_peak_db": -1.0,
+    "rms_dbfs": -10.02,
+    "wav": "out\\gen\\gww-c1-v2-lib\\gww-c1-v2-lib - 123bpm - 10A (lib).wav"
+   },
+   "check": {
+    "sr": 44100,
+    "subtype": "PCM_16",
+    "seconds": 359.22,
+    "peak_dbfs": -2.44,
+    "clipped_samples": 0
+   },
+   "bass_metrics": {
+    "mix_40_150": -0.76,
+    "mix_150_400": -13.27,
+    "bass_40_150": -6.16,
+    "bass_150_400": -14.99,
+    "bass_150_800": -14.15,
+    "bass_total": -5.38
+   },
+   "mp3": "out\\_previews\\gww-c1-v2-lib_lib.mp3"
+  }
+ },
+ "lib": {
+  "kick": {
+   "strudel": "lib_kick:14",
+   "cat": "kick",
+   "pack": "sas023",
+   "licence": "ok",
+   "path": "SAS023_Samplesound_Techno_Volume_4/SS_TCN_One_Shot/SS_TCN_Kick_Solo/SS_TCN_#4_Kick_Solo_09.wav",
+   "hit_db": -7.83,
+   "conf": 0.95,
+   "root_midi": null,
+   "sub": null,
+   "ref": "samples\\groove_with_it_wav\\kick\\0.wav",
+   "ref_hit_db": -9.6,
+   "dist": 0.108,
+   "gain": 0.816
+  },
+  "clap": {
+   "strudel": "lib_clap:44",
+   "cat": "clap",
+   "pack": "ghosthack",
+   "licence": "ok",
+   "path": "Ghosthack - AC2025 - Day 1 - Warehouse Techno Sounds 2026/One-Shots/Clap/Ghosthack-AC25_Clap_009.wav",
+   "hit_db": -10.69,
+   "conf": 0.95,
+   "root_midi": null,
+   "sub": null,
+   "ref": "samples\\groove_with_it_wav\\clap\\0.wav",
+   "ref_hit_db": -17.7,
+   "dist": 0.22,
+   "gain": 0.317
+  },
+  "hh": {
+   "strudel": "lib_hh:6",
+   "cat": "hat_closed",
+   "pack": "sas131",
+   "licence": "ok",
+   "path": "SAS131_Samplesound - Atlant - Melodic Techno/SAS One Shot HH/SAS_One_Shot_HH_03.wav",
+   "hit_db": -25.58,
+   "conf": 0.82,
+   "root_midi": null,
+   "sub": null,
+   "ref": "samples\\groove_with_it_wav\\hh\\1.wav",
+   "ref_hit_db": -22.93,
+   "dist": 0.159,
+   "gain": 0.706
+  },
+  "oh": {
+   "strudel": "lib_oh:2",
+   "cat": "hat_open",
+   "pack": "sas023",
+   "licence": "ok",
+   "path": "SAS023_Samplesound_Techno_Volume_4/SS_TCN_One_Shot/SS_TCN__HH/SS_TCN_#4_HH_06.wav",
+   "hit_db": -7.53,
+   "conf": 0.82,
+   "root_midi": null,
+   "sub": null,
+   "ref": "samples\\groove_with_it_wav\\hh\\0.wav",
+   "ref_hit_db": -18.59,
+   "dist": 0.148,
+   "gain": 0.084
+  },
+  "perc": {
+   "strudel": "lib_perc:25",
+   "cat": "perc",
+   "pack": "sas131",
+   "licence": "ok",
+   "path": "SAS131_Samplesound - Atlant - Melodic Techno/SAS One Shot Perc/SAS_One_Shot_Perc_04.wav",
+   "hit_db": -30.19,
+   "conf": 0.7,
+   "root_midi": null,
+   "sub": null,
+   "ref": "samples\\groove_with_it_wav\\perc\\0.wav",
+   "ref_hit_db": -28.71,
+   "dist": 0.548,
+   "gain": 0.984
+  },
+  "shaker": {
+   "strudel": "lib_hh:16",
+   "cat": "hat_closed",
+   "pack": "ghosthack",
+   "licence": "ok",
+   "path": "Ghosthack - AC2025 - Day 1 - Warehouse Techno Sounds 2026/One-Shots/Hat/Ghosthack-AC25_Hat_019.wav",
+   "hit_db": -15.53,
+   "conf": 0.82,
+   "root_midi": null,
+   "sub": null,
+   "ref": "samples\\groove_with_it_wav\\hh\\1.wav",
+   "ref_hit_db": -22.93,
+   "dist": 0.187,
+   "gain": 0.107
+  },
+  "crash": {
+   "skipped": "no candidate (ride, licence ok)"
+  },
+  "bass": {
+   "skipped": "no candidate (bass, licence ok)"
+  },
+  "loop": {
+   "strudel": "lib_toploop:150",
+   "bpm": 124.0,
+   "bars": 16,
+   "pack": "sas131",
+   "licence": "ok",
+   "path": "SAS131_Samplesound - Atlant - Melodic Techno/SAS Kit Construction 02/SAS_Rimshot_124BPM_KeyD_02.wav",
+   "lufs": -29.76,
+   "sub": "perc",
+   "gain": 1.225
+  }
+ },
+ "reference": {
+  "slug": "groove_with_it_wav_full",
+  "lufs": -11.77,
+  "true_peak_db": -0.84,
+  "rms_dbfs": -12.51,
+  "bass_balance_main": {
+   "bass_150_400": -25.66,
+   "bass_150_800": -25.53,
+   "bass_40_150": -8.85,
+   "bass_total": -8.63,
+   "mix_150_400": -11.05,
+   "mix_150_800": -10.2,
+   "mix_40_150": -0.64,
+   "mix_rms_dbfs": -11.67
+  }
+ }
+}

@@ -77,6 +77,17 @@ $: n("<~ 0 0 0 0 0 0 0 0 0 ~ 0 0 0 0 0 0 0 0 0 0 0 0 ~ ~ 0 0 0 ~ 0 0 0>").s("co_
 // $: s("co_other").loopAt(1).postgain(0.37)   // just the main loop, every 1 bar(s)
 // $: s("co_other").splice(16, "<[0 .. 15]>").postgain(0.37)   // same loop as 16 16th slices: reorder to remix
 
+// acid: filter-swept pitched synth of the 'other' stem (v2.5): 27 active bars, brightness (1.5-8k vs 0.2-1.5k) p90-p10 24.4 dB -> 303-style voice, 1 cutoff + 1 level per bar fitted on the stem
+//   notes = lead.mid onsets (16ths 3:74%, 4:97%, 9:35%, 13:29% of the bars), chord tones [0] from the stem chroma; .gain = per-16th accent; .lpf = per-bar cutoff (Hz); .postgain = per-bar level (after .distort) incl. stems -> mix +1.22 dB
+//   glide not rendered (no portamento on Strudel 1.3 synths); T2S_NO_ACID=1 to compare without
+$: note("<0!3 1 2!2 3 1 3 0!7 2 3 2!3 3!2 0!8 1 0>".pick([
+    "~ ~ ~ c4 c4 ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~",  // 0
+    "~ ~ ~ c4 c4 ~ ~ ~ ~ ~ ~ ~ ~ c3 ~ ~", // 1
+    "~ ~ ~ c4 c4 ~ ~ ~ ~ c4 ~ ~ ~ c3 ~ ~",// 2
+    "~ ~ ~ c4 c4 ~ ~ ~ ~ c4 ~ ~ ~ ~ ~ ~", // 3
+  ]))
+  .s("sawtooth").ftype("ladder").lpf("<540 570 460 440 230 270 160 150 230 160 540 520 590 960!3 620 690 610 590 580 540 630 540!2 150 160 150 540 510 960!2 540>").lpq(28).lpenv(2).lpa(.002).lpd(.12).decay(.2).sustain(.2).release(.05).distort(3).gain("0 0 0 .63 1 0 0 0 0 .36 0 0 0 .38 0 0").postgain("<0 .0376 .0483 .00609 .0328 .0305 .0313 .0375 .0332 .0368 0 .0287 .0289 .0599 .0874 .0518 .0195 .0286 .0334 .0427 .0475 .053 .0366 0!2 .0398 .06 .0324 0 .0227 .0472 .0516 0>")
+
 // vox: loop of 4 bar(s) cut from stems\vocals.wav on the kick-tempo bar grid; 10/31 bars active, 2 variant(s) starting bars [17, 13] (x[2, 1]), similarity bar b vs b+L 0.913
 //   .loopAt(4) = sample stretched to exactly 4 cycle(s); the file is 4 bar(s) at this tempo -> rate 1.0000, stays locked if you change setcpm
 //   arrangement of the excerpt (variant per 4-bar segment, ~ = no vox)
