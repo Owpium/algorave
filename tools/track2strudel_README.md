@@ -76,6 +76,8 @@ python tools\t2s_batch.py summary|triage|prune <lot> [--dry-run]
   - ≈ 0,5-0,6 Go → ≈ 80 Mo par morceau (6 min de musique) ; avec `--with-full` ≈ 0,4 Go.
 
 ## v2.5 (2026-10) - acid / HF synth lane (`tools\acid_lane.py`, called by extract_samples)
+- **Status: OFF by default** (`ACID_ENABLE=0` in `t2s_params.py`; to revisit on a lossless WAV). Re-enable with
+  `--param ACID_ENABLE=1` (t2s.py / track2strudel.py / check_golden.py); `T2S_NO_ACID=1` still forces it off.
 - **What**: a pitched part of the 'other' stem whose filter opens / closes from bar to bar. The 1-bar 'other' loop
   replays one timbre (per-bar level only), so the sweep was lost (Contradiction: the C stab on 16ths 3-4 / 9 / 13,
   1.5-8k vs 0.2-1.5k balance from -25 dB (bars 5-9, 25-27) to +3 dB (bars 13-21, 29-31); heard as "the acid" on

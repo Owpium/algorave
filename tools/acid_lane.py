@@ -8,7 +8,8 @@ A pitched part of the 'other' stem whose filter opens and closes from bar to bar
   with one cutoff and one level per bar ("<...>") fitted on the stem: the voice is first rendered offline at a ladder
   of cutoffs (same pattern) and each bar of the stem takes the cutoff whose 1/3-octave spectral shape matches best.
 Generic: emitted only when detected (pitched loop found in the 'other' stem + per-bar brightness range >=
-ACID_MIN_SWEEP_DB over >= ACID_MIN_BARS active bars). Thresholds in t2s_params.py; env T2S_NO_ACID=1 disables it.
+ACID_MIN_SWEEP_DB over >= ACID_MIN_BARS active bars). Thresholds in t2s_params.py. OFF by default (ACID_ENABLE=0,
+to revisit on a lossless WAV): --param ACID_ENABLE=1 turns it on; env T2S_NO_ACID=1 still forces it off.
 Glide: not native in Strudel 1.3 (no portamento on synth voices) -> not rendered; slides would need note splitting.
 """
 import json, os, subprocess, tempfile
@@ -165,6 +166,8 @@ def acid_lane(out, an, prefix, other_loop=None):
     info = dict(status="off")
     if os.environ.get("T2S_NO_ACID"):
         info["status"] = "disabled (T2S_NO_ACID)"; return info
+    if not TP.ACID_ENABLE:  # off by default (to revisit on a lossless WAV); --param ACID_ENABLE=1 re-enables it
+        info["status"] = "disabled (ACID_ENABLE=0, default)"; return info
     try:
         return _acid_lane(out, an, prefix, other_loop, info)
     except Exception as e:  # never break the samples stage

@@ -55,6 +55,7 @@ PARAMS = {
     "LOOP_OTHER_MIN_DB": Param(-26.0, -34.0, -18.0, "extract_loops", "other bar active if stem RMS vs mix > this (dB)"),
     "LOOP_OTHER_QUIET_DB": Param(-36.0, -44.0, -28.0, "extract_loops", "same, when basic-pitch found a consistent pitched loop"),
     # --- acid_lane.py (v2.5, called by extract_samples)
+    "ACID_ENABLE": Param(0, 0, 1, "acid_lane", "acid lane: 0 = off (default, revisit with a lossless WAV), 1 = on"),
     "ACID_MIN_SWEEP_DB": Param(8.0, 4.0, 16.0, "acid_lane", "acid lane: per-bar brightness (1.5-8k vs 0.2-1.5k) p90-p10 of the 'other' stem on the note steps (dB)"),
     "ACID_MIN_BRIGHT_DB": Param(-15.0, -25.0, -5.0, "acid_lane", "acid lane: p75 of the per-bar brightness must reach this (filter really opens) [refs: co -5.7, others <= -21]"),
     "ACID_MIN_BARS": Param(8, 4, 16, "acid_lane", "acid lane: active bars needed"),

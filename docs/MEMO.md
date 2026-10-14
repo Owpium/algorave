@@ -45,6 +45,7 @@ tools\t2s.bat batch "D:\Mes WAV" --prune-stems
 
 Résultats dans `out\_batch\<nom du dossier>\` :
 - `summary.md` / `summary.csv` (Excel) : verdict, BPM, tonalité, métriques, signaux (rumble, swing, acid, clap)
+  (la lane acid est **désactivée par défaut** — à revoir avec un WAV lossless ; pour la réactiver : `--param ACID_ENABLE=1`)
 - Aperçus à écouter sur le téléphone : `out\_previews\batch\<slug>.mp3`
 - Des FAIL ? Lance `.\.venv\Scripts\python.exe tools\t2s_batch.py triage <nom du lot>` → envoie à Claude
   **seulement** les 1 à 3 `diag.md` indiqués par classe d'échec (pas tous)
