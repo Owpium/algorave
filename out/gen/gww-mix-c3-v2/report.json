@@ -1,0 +1,348 @@
+{
+ "name": "gww-mix-c3-v2",
+ "version": 2,
+ "params": {
+  "dna": "gww_mix",
+  "name": "gww-mix-c3-v2",
+  "bpm": 124.0,
+  "key": "9A",
+  "seed": 33,
+  "energy": 0.6,
+  "length_min": 6.0,
+  "intro_bars": 16,
+  "outro_bars": 16,
+  "kit": "both",
+  "no_render": false,
+  "no_master": false,
+  "no_stems": false,
+  "no_mp3": false
+ },
+ "bpm": 124,
+ "key": "Em",
+ "camelot": "9A",
+ "bars": 184,
+ "minutes": 5.94,
+ "sections": [
+  [
+   "intro",
+   16
+  ],
+  [
+   "groove",
+   40
+  ],
+  [
+   "brk",
+   8
+  ],
+  [
+   "grooveB",
+   24
+  ],
+  [
+   "break",
+   16
+  ],
+  [
+   "rise",
+   8
+  ],
+  [
+   "drop",
+   32
+  ],
+  [
+   "groove2",
+   24
+  ],
+  [
+   "outro",
+   16
+  ]
+ ],
+ "timeline": [
+  {
+   "section": "intro",
+   "bars": [1, 16],
+   "start": "0:00",
+   "cells": [
+    "K",
+    "K H",
+    "K H P b",
+    "K C H P b"
+   ]
+  },
+  {
+   "section": "groove",
+   "bars": [17, 56],
+   "start": "0:30",
+   "cells": [
+    "K C H P B",
+    "K C H P B",
+    "K C H P B Y",
+    "K C H P B Y M",
+    "K C H O P B V Y",
+    "K C H O P B V Y",
+    "K C H O P B V Y W",
+    "K C H O P B V Y W",
+    "K C H O P B Y W X",
+    "K C H O P B Y W X"
+   ]
+  },
+  {
+   "section": "brk",
+   "bars": [57, 64],
+   "start": "1:48",
+   "cells": [
+    "H b y X D",
+    "C H b Y X R"
+   ]
+  },
+  {
+   "section": "grooveB",
+   "bars": [65, 88],
+   "start": "2:03",
+   "cells": [
+    "K C H S B V Y",
+    "K C H S B V Y",
+    "K C H S B V Y W",
+    "K C H S B V Y W M",
+    "K C H B V Y W X",
+    "K C H B V Y W X"
+   ]
+  },
+  {
+   "section": "break",
+   "bars": [89, 104],
+   "start": "2:50",
+   "cells": [
+    "y X D",
+    "y X D",
+    "H y X D",
+    "H b Y X D"
+   ]
+  },
+  {
+   "section": "rise",
+   "bars": [105, 112],
+   "start": "3:21",
+   "cells": [
+    "H b Y D R",
+    "C H b Y D R"
+   ]
+  },
+  {
+   "section": "drop",
+   "bars": [113, 144],
+   "start": "3:36",
+   "cells": [
+    "K C H O P S B Y X",
+    "K C H O P S B Y X",
+    "K C H O S B Y X",
+    "K C H O S B Y X M",
+    "K C H O S B V Y W X",
+    "K C H O S B V Y W X",
+    "K C H O P S B V Y W X",
+    "K C H O P S B V Y W X"
+   ]
+  },
+  {
+   "section": "groove2",
+   "bars": [145, 168],
+   "start": "4:38",
+   "cells": [
+    "K C H O P B V Y",
+    "K C H O P B V Y",
+    "K C H O P B V",
+    "K C H O P B V M",
+    "K C H P S B V",
+    "K C H P S B V"
+   ]
+  },
+  {
+   "section": "outro",
+   "bars": [169, 184],
+   "start": "5:25",
+   "cells": [
+    "K C H P S",
+    "K C H P",
+    "K H P",
+    "K H"
+   ]
+  }
+ ],
+ "arrangement_checks": {
+  "longest_static_bars": 8,
+  "bass_open_from_bar": 17,
+  "full_groove_from": "bar 25 = 46 s"
+ },
+ "novelty": {
+  "bass": [
+   {
+    "min_bar_dist": 0.5,
+    "min_2bar_dist": 0.684,
+    "min_bar_onset_dist": 0.286,
+    "min_2bar_onset_dist": 0.5,
+    "tries": 1,
+    "ok": true,
+    "rhythm_ok": true
+   },
+   {
+    "min_bar_dist": 0.5,
+    "min_2bar_dist": 0.611,
+    "min_bar_onset_dist": 0.143,
+    "min_2bar_onset_dist": 0.312,
+    "tries": 2,
+    "ok": true,
+    "rhythm_ok": true
+   }
+  ],
+  "hook": [
+   {
+    "min_bar_dist": 0.429,
+    "min_2bar_dist": 0.75,
+    "min_bar_onset_dist": 0.333,
+    "min_2bar_onset_dist": 0.533,
+    "tries": 1,
+    "ok": true,
+    "rhythm_ok": true
+   },
+   {
+    "min_bar_dist": 0.4,
+    "min_2bar_dist": 0.75,
+    "min_bar_onset_dist": 0.333,
+    "min_2bar_onset_dist": 0.545,
+    "tries": 2,
+    "ok": true,
+    "rhythm_ok": true
+   }
+  ],
+  "threshold": 0.4
+ },
+ "dna_fit": {
+  "drums": {
+   "kick": 0.968,
+   "clap": 0.98,
+   "hh": 0.827
+  },
+  "bass": [
+   {
+    "onset_fit_audio": 0.569,
+    "onset_fit_midi": 0.538,
+    "onsets_per_bar": 7.0,
+    "in_vocab": 1.0
+   },
+   {
+    "onset_fit_audio": 0.522,
+    "onset_fit_midi": 0.634,
+    "onsets_per_bar": 6.5,
+    "in_vocab": 1.0
+   }
+  ],
+  "hook": [
+   {
+    "onset_fit": 0.526
+   },
+   {
+    "onset_fit": 0.555
+   }
+  ]
+ },
+ "hook_sound_own": "organ",
+ "renders": {
+  "own": {
+   "render": {
+    "cps": 0.5166666666666667,
+    "chunks": 23,
+    "raw_peak": 1.721
+   },
+   "errors": [],
+   "premaster": {
+    "wav": "out\\gen\\gww-mix-c3-v2\\gww-mix-c3-v2 - 124bpm - 9A (premaster).wav",
+    "lufs": -16.37,
+    "true_peak_db": -0.99,
+    "rms_dbfs": -17.97
+   },
+   "master": {
+    "glue_gr_db": 2.05,
+    "drive_db": 19.63,
+    "limiter_max_gr_db": 2.87,
+    "lufs": -9.15,
+    "true_peak_db": -1.01,
+    "rms_dbfs": -10.79,
+    "wav": "out\\gen\\gww-mix-c3-v2\\gww-mix-c3-v2 - 124bpm - 9A.wav"
+   },
+   "check": {
+    "sr": 44100,
+    "subtype": "PCM_16",
+    "seconds": 356.13,
+    "peak_dbfs": -2.87,
+    "clipped_samples": 0
+   },
+   "bass_metrics": {
+    "mix_40_150": -2.15,
+    "mix_150_400": -5.3,
+    "bass_40_150": -9.56,
+    "bass_150_400": -11.28,
+    "bass_150_800": -10.85,
+    "bass_total": -6.95
+   },
+   "mp3": "out\\_previews\\gww-mix-c3-v2_own.mp3"
+  },
+  "inspi": {
+   "render": {
+    "cps": 0.5166666666666667,
+    "chunks": 23,
+    "raw_peak": 2.331
+   },
+   "errors": [],
+   "premaster": {
+    "wav": "out\\gen\\gww-mix-c3-v2\\gww-mix-c3-v2 - 124bpm - 9A (inspi premaster).wav",
+    "lufs": -16.28,
+    "true_peak_db": -0.99,
+    "rms_dbfs": -17.37
+   },
+   "master": {
+    "glue_gr_db": 1.2,
+    "drive_db": 15.43,
+    "limiter_max_gr_db": 2.17,
+    "lufs": -9.14,
+    "true_peak_db": -1.04,
+    "rms_dbfs": -10.01,
+    "wav": "out\\gen\\gww-mix-c3-v2\\gww-mix-c3-v2 - 124bpm - 9A (inspi).wav"
+   },
+   "check": {
+    "sr": 44100,
+    "subtype": "PCM_16",
+    "seconds": 356.2,
+    "peak_dbfs": -2.17,
+    "clipped_samples": 0
+   },
+   "bass_metrics": {
+    "mix_40_150": -0.74,
+    "mix_150_400": -10.02,
+    "bass_40_150": -3.85,
+    "bass_150_400": -11.89,
+    "bass_150_800": -11.65,
+    "bass_total": -3.18
+   },
+   "mp3": "out\\_previews\\gww-mix-c3-v2_inspi.mp3"
+  }
+ },
+ "reference": {
+  "slug": "groove_with_it_wav_full",
+  "lufs": -11.77,
+  "true_peak_db": -0.84,
+  "rms_dbfs": -12.51,
+  "bass_balance_main": {
+   "bass_150_400": -24.16,
+   "bass_150_800": -24.01,
+   "bass_40_150": -8.24,
+   "bass_total": -7.942,
+   "mix_150_400": -11.032,
+   "mix_150_800": -10.21,
+   "mix_40_150": -0.717,
+   "mix_rms_dbfs": -11.46
+  }
+ }
+}

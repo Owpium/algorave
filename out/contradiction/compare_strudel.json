@@ -26,7 +26,7 @@
    -0.01,
    -0.06
   ],
-  "spectral_profile_corr_all": 0.997,
+  "spectral_profile_corr_all": 0.998,
   "blocks": [
    {
     "bars": [
@@ -62,14 +62,14 @@
     ],
     "rms_diff_db": -0.06,
     "kick_offset_ms_median": 0.51,
-    "spectral_profile_corr": 0.997
+    "spectral_profile_corr": 0.998
    }
   ],
   "level_gap_db": 0.04,
-  "tf_logmel_corr": 0.925,
+  "tf_logmel_corr": 0.926,
   "band_gap_db": {
    "le150": 0.06,
-   "150_4k": -0.49,
+   "150_4k": -0.46,
    "gt4k": -1.04
   },
   "per_bar_level_corr": {
@@ -84,20 +84,20 @@
     "range_orig_db": 0.3
    },
    "150_4k": {
-    "r": 0.558,
+    "r": 0.547,
     "mae_db": 0.25,
     "range_orig_db": 1.0
    },
    "gt4k": {
-    "r": 0.528,
+    "r": 0.529,
     "mae_db": 0.5,
     "range_orig_db": 1.3
    }
   },
-  "tf_logmel_corr_all_bars": 0.927,
+  "tf_logmel_corr_all_bars": 0.928,
   "band_gap_abs_db": {
    "le150": 0.02,
-   "150_4k": -0.53,
+   "150_4k": -0.5,
    "gt4k": -1.08
   },
   "before_loops": {
@@ -109,7 +109,7 @@
     -0.04
    ],
    "spectral_profile_corr_all": 0.997,
-   "tf_logmel_corr": 0.907
+   "tf_logmel_corr": 0.91
   },
   "vox_alignment": {
    "offset_ms": 0.41,
@@ -137,12 +137,12 @@
    },
    "other": {
     "gap_db": {
-     "all": 1.41,
-     "le150": -2.63,
-     "150_4k": 1.8,
-     "gt4k": -8.17
+     "all": 3.23,
+     "le150": -2.32,
+     "150_4k": 3.62,
+     "gt4k": -1.11
     },
-    "tf_logmel_corr": 0.789
+    "tf_logmel_corr": 0.763
    },
    "vox": {
     "gap_db": {
@@ -156,9 +156,9 @@
   },
   "render": {
    "cps": 0.5333333333333333,
-   "raw_peak": 1.288573980331421,
-   "scale": 0.6906859936525276,
-   "render_ms": 9547,
+   "raw_peak": 1.2885737419128418,
+   "scale": 0.6906861214468228,
+   "render_ms": 27112,
    "seconds": 61.875
   }
  },

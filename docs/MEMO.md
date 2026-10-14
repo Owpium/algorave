@@ -102,7 +102,7 @@ Générer avec tes packs (seulement les packs dont la licence autorise la sortie
 - Tempo : `setcpm(124/4)` (1 cycle = 1 mesure)
 - Couper une piste : `//` devant sa ligne `$:`, puis Ctrl+Entrée
 - Volume : `.gain(0.8)` · Filtre : `.lpf(800)` (plus sombre), `.hpf(300)` (plus léger)
-- Morceau généré : modifie le tableau `SECTIONS` en haut pour réarranger
+- Morceau généré : modifie le tableau `PLAN` en haut pour réarranger (1 case = 4 mesures, lettres = couches actives)
 - Les curseurs (énergie, stab, filtre basse) apparaissent tout seuls sur strudel.cc
 
 ## 5. Vérifier qu'on n'a rien cassé

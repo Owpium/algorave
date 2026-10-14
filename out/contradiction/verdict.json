@@ -1,0 +1,35 @@
+{
+ "slug": "contradiction",
+ "verdict": "PASS",
+ "failing": [],
+ "metrics": {
+  "tf_logmel_corr": 0.926,
+  "level_gap_db": 0.04,
+  "band_gap_abs_db.le150": 0.02,
+  "band_gap_abs_db.150_4k": -0.5,
+  "band_gap_abs_db.gt4k": -1.08,
+  "kick_align_ms": 0.52,
+  "vox_align_ms": 0.41,
+  "other_align_ms": -1.47,
+  "symbolic_share": 0.667,
+  "lanes": "kick perc hh other(loop) acid vox(loop)"
+ },
+ "source": {
+  "audio": "C:\\Users\\Jo'\\Music\\ALGORAVE\\refs\\Amelie Lens - Contradiction.mp3",
+  "start": 97.1,
+  "dur": 60.05
+ },
+ "params_overrides": {},
+ "switches": {},
+ "timings_s": {
+  "excerpt": "cached",
+  "stems": "cached",
+  "detections": "cached",
+  "code": 16.7,
+  "samples": 32.6,
+  "render": 146.5,
+  "verdict": 0.0
+ },
+ "listen": "out\\contradiction\\compare_ab_strudel.wav",
+ "code": "out\\contradiction\\contradiction.samples.strudel.js"
+}

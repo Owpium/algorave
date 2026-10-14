@@ -8,7 +8,7 @@
   "seed": 33,
   "energy": 0.6,
   "length_min": 6.0,
-  "kit": "own",
+  "kit": "both",
   "no_render": false
  },
  "bpm": 124,
@@ -109,12 +109,28 @@
    "render": {
     "cps": 0.5166666666666667,
     "chunks": 23,
-    "raw_peak": 1.518
+    "raw_peak": 1.517
    },
    "check": {
     "sr": 44100,
     "subtype": "PCM_16",
     "seconds": 356.13,
+    "peak_dbfs": -1.0,
+    "clipped_samples": 0
+   },
+   "errors": []
+  },
+  "inspi": {
+   "wav": "out\\gen\\gww-mix-c3\\gww-mix-c3 - 124bpm - 9A (inspi).wav",
+   "render": {
+    "cps": 0.5166666666666667,
+    "chunks": 23,
+    "raw_peak": 1.638
+   },
+   "check": {
+    "sr": 44100,
+    "subtype": "PCM_16",
+    "seconds": 356.16,
     "peak_dbfs": -1.0,
     "clipped_samples": 0
    },
