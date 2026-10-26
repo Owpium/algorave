@@ -24,6 +24,7 @@ from scipy.signal import butter, sosfiltfilt, hilbert
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from track2strudel import STEPS  # noqa: E402
+from t2s_params import P as TP  # noqa: E402
 from extract_samples import load_grid  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -45,8 +46,39 @@ def node_exe():
 
 
 def render(code_file, wav, cycles, rdir, sdir):
+    """headless Strudel render of cycles 0..cycles -> wav (peak-normalised, info['scale'] = factor applied).
+    renderPatternAudio's cost grows ~quadratically with the cycle count (20 cycles 2.6 s, 40 cycles 9.9 s, a
+    162-cycle full track > 40 min): long renders are done in chunks of RENDER_CHUNK_CYCLES, each started
+    RENDER_PREROLL_CYCLES earlier (tails of samples triggered before the chunk, loopAt up to 8 cycles) and cut
+    back to its own cycles, then the raw (un-normalised) chunks are concatenated and normalised once."""
+    ch, pre = int(TP.RENDER_CHUNK_CYCLES), int(TP.RENDER_PREROLL_CYCLES)
+    if cycles <= ch + pre:
+        return render_once(code_file, wav, cycles, 0, rdir, sdir)
+    tmpd = Path(wav).parent / (Path(wav).stem + "_chunks"); tmpd.mkdir(exist_ok=True)
+    parts, info0, SRr = [], None, None
+    for b in range(0, int(np.ceil(cycles)), ch):
+        n = min(ch, cycles - b); b0 = max(0, b - pre)
+        w = tmpd / f"c{b:04d}.wav"
+        inf = render_once(code_file, w, (b + n) - b0, b0, rdir, sdir)
+        x, SRr = sf.read(str(w), always_2d=True)
+        x = x / inf["scale"]                                   # back to the raw level
+        cps = inf["cps"]; info0 = info0 or inf
+        a = int(round(b / cps * SRr)) - int(round(b0 / cps * SRr))
+        z = a + int(round((b + n) / cps * SRr)) - int(round(b / cps * SRr))
+        parts.append(x[a:min(z, len(x))])
+    shutil.rmtree(tmpd, ignore_errors=True)
+    y = np.concatenate(parts)
+    peak = float(np.abs(y).max()); k = 0.89 / peak if peak > 0 else 1.0
+    sf.write(str(wav), (y * k).astype(np.float32), SRr, subtype="FLOAT")
+    log(f"  rendered in {len(parts)} chunks of {ch} cycles (+{pre} pre-roll)")
+    return dict(info0, raw_peak=peak, scale=k, length=len(y), cycles=cycles, begin=0, seconds=cycles / info0["cps"])
+
+
+def render_once(code_file, wav, cycles, begin, rdir, sdir):
     cmd = [node_exe(), str(rdir / "render.mjs"), str(code_file), str(wav), "--cycles", str(cycles),
-           "--samples-dir", str(sdir)]
+           "--samples-dir", str(sdir), "--timeout-ms", str(int(TP.RENDER_TIMEOUT_S * 1000))]
+    if begin:
+        cmd += ["--begin", str(begin)]
     r = subprocess.run(cmd, capture_output=True, text=True, cwd=str(rdir))
     if r.returncode != 0 or not Path(wav).exists():
         raise SystemExit(f"render failed:\n{r.stdout}\n{r.stderr}")
@@ -144,8 +176,12 @@ def onsets_near(x_low, times, win=0.045, rel=0.3):
         w = e[a:b]; p = int(np.argmax(w))
         if w[p] < rel * ref:
             out.append(np.nan); continue
+        # threshold over the valley before the peak, and never past it: a tiled kick one-shot / rumble / bass keeps
+        # the low band > 25 % of the peak between kicks (fast hard techno), and the plain 25 %-of-peak search then
+        # ran back to the window start (onset saturated at -45 ms). Clean kicks (floor ~ 0): same as before.
+        v = int(np.argmin(w[:p + 1])); fl = float(w[v])
         i = p
-        while i > 0 and w[i] > 0.25 * w[p]:
+        while i > v and w[i] > fl + 0.25 * (w[p] - fl):
             i -= 1
         out.append((a + i) / SR)
     return np.array(out)
@@ -228,7 +264,11 @@ def build_compare(out, an, grid, bar0, rend, rend_drums, tag, cps, scale=1.0, ex
     q_orig = np.array([float(grid.step_time((b + bar0) * STEPS + 4 * k)) for b in range(nbars) for k in range(4)])
     q_rend = np.array([(b + k / 4) / cps for b in range(nbars) for k in range(4)])
     ko = onsets_near(band(drums.mean(1), None, 150), q_orig)
-    kr = onsets_near(band(rend_drums.mean(1), None, 150), q_rend)
+    # the render's cycle grid sits code_offset_s (<= 0) before the audio grid (samples are cut from there), so its
+    # kicks land -code_offset_s after each cycle step: centre the search windows there (a fixed +-45 ms window
+    # centred on the cycle step misses the kick of a slow-rise kick once the offset nears 40 ms -> saturated at -45 ms)
+    c_off = float(an.get("tempo", {}).get("code_offset_s", 0.0) or 0.0)
+    kr = onsets_near(band(rend_drums.mean(1), None, 150), q_rend - c_off)
     first = float(kr[np.isfinite(kr)][0]) if np.isfinite(kr).any() else float("nan")
     dev_o, dev_r = ko - q_orig, kr - q_rend
     delta = float(np.nanmedian(dev_o) - np.nanmedian(dev_r)) if np.isfinite(dev_o).any() and np.isfinite(dev_r).any() else 0.0

@@ -3,20 +3,20 @@
   "version": "samples",
   "cps": 0.5333333333333333,
   "bars": 33,
-  "render_first_kick_onset_ms": 39.75,
-  "orig_kick_vs_grid_median_ms": 17.77,
-  "render_kick_vs_cycle_grid_median_ms": 39.78,
+  "render_first_kick_onset_ms": 41.2,
+  "orig_kick_vs_grid_median_ms": 17.83,
+  "render_kick_vs_cycle_grid_median_ms": 41.2,
   "alignment_mode": "constant tempo from kick fit: 128.000 BPM (code 128.000), render stretched x1.00000",
   "orig_kick_tempo_fit": {
-   "bpm": 128.0003,
-   "residual_std_ms": 0.17
+   "bpm": 128.0001,
+   "residual_std_ms": 0.24
   },
-  "applied_offset_ms": -385.66,
+  "applied_offset_ms": -386.97,
   "block_shifts_ms": null,
   "kick_offset_ms": {
-   "median": 0.52,
-   "median_abs": 0.52,
-   "p90_abs": 0.73,
+   "median": -0.19,
+   "median_abs": 0.22,
+   "p90_abs": 0.45,
    "n": 128
   },
   "rms_gain_applied_db": 3.26,
@@ -34,7 +34,7 @@
      8
     ],
     "rms_diff_db": -0.02,
-    "kick_offset_ms_median": 0.59,
+    "kick_offset_ms_median": -0.03,
     "spectral_profile_corr": 0.998
    },
    {
@@ -43,8 +43,8 @@
      16
     ],
     "rms_diff_db": 0.09,
-    "kick_offset_ms_median": 0.45,
-    "spectral_profile_corr": 0.996
+    "kick_offset_ms_median": -0.49,
+    "spectral_profile_corr": 0.997
    },
    {
     "bars": [
@@ -52,8 +52,8 @@
      24
     ],
     "rms_diff_db": -0.01,
-    "kick_offset_ms_median": 0.52,
-    "spectral_profile_corr": 0.998
+    "kick_offset_ms_median": -0.14,
+    "spectral_profile_corr": 0.999
    },
    {
     "bars": [
@@ -61,12 +61,12 @@
      32
     ],
     "rms_diff_db": -0.06,
-    "kick_offset_ms_median": 0.51,
-    "spectral_profile_corr": 0.997
+    "kick_offset_ms_median": -0.23,
+    "spectral_profile_corr": 0.998
    }
   ],
   "level_gap_db": 0.04,
-  "tf_logmel_corr": 0.925,
+  "tf_logmel_corr": 0.924,
   "band_gap_db": {
    "le150": 0.06,
    "150_4k": -0.49,
@@ -84,7 +84,7 @@
     "range_orig_db": 0.3
    },
    "150_4k": {
-    "r": 0.558,
+    "r": 0.57,
     "mae_db": 0.25,
     "range_orig_db": 1.0
    },
@@ -94,7 +94,7 @@
     "range_orig_db": 1.3
    }
   },
-  "tf_logmel_corr_all_bars": 0.927,
+  "tf_logmel_corr_all_bars": 0.926,
   "band_gap_abs_db": {
    "le150": 0.02,
    "150_4k": -0.53,
@@ -109,20 +109,20 @@
     -0.04
    ],
    "spectral_profile_corr_all": 0.997,
-   "tf_logmel_corr": 0.907
+   "tf_logmel_corr": 0.906
   },
   "vox_alignment": {
-   "offset_ms": 0.41,
-   "peak_corr": 0.802,
-   "corr_at_0": 0.568,
-   "envelope_offset_ms": 0.39,
+   "offset_ms": -0.84,
+   "peak_corr": 0.801,
+   "corr_at_0": 0.352,
+   "envelope_offset_ms": -0.86,
    "envelope_corr": 0.821
   },
   "other_alignment": {
-   "offset_ms": -1.47,
-   "peak_corr": 0.125,
-   "corr_at_0": -0.011,
-   "envelope_offset_ms": -5.24,
+   "offset_ms": -2.72,
+   "peak_corr": 0.13,
+   "corr_at_0": 0.04,
+   "envelope_offset_ms": -6.51,
    "envelope_corr": 0.733
   },
   "groups": {
@@ -133,7 +133,7 @@
      "150_4k": 1.2,
      "gt4k": 0.69
     },
-    "tf_logmel_corr": 0.919
+    "tf_logmel_corr": 0.918
    },
    "other": {
     "gap_db": {
@@ -156,9 +156,9 @@
   },
   "render": {
    "cps": 0.5333333333333333,
-   "raw_peak": 1.2885738611221313,
-   "scale": 0.6906860575496693,
-   "render_ms": 11400,
+   "raw_peak": 1.288573980331421,
+   "scale": 0.6906859936525276,
+   "render_ms": 9106,
    "seconds": 61.875
   }
  },

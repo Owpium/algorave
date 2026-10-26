@@ -82,7 +82,7 @@ try {
   await page.waitForFunction(() => window.ready === true, null, { timeout: 60000 });
   const t0 = Date.now();
   const [dl, info] = await Promise.all([
-    page.waitForEvent('download', { timeout: 600000 }),
+    page.waitForEvent('download', { timeout: parseFloat(opt('--timeout-ms', '600000')) }),
     page.evaluate(([c, n, b, pb]) => window.renderCode(c, n, b, pb, 'render'), [code, cycles, begin, prebake]),
   ]);
   fs.mkdirSync(path.dirname(path.resolve(outWav)), { recursive: true });

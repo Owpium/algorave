@@ -3,20 +3,20 @@
   "version": "samples",
   "cps": 0.5124958333333333,
   "bars": 34,
-  "render_first_kick_onset_ms": 18.19,
-  "orig_kick_vs_grid_median_ms": 5.03,
-  "render_kick_vs_cycle_grid_median_ms": 18.21,
+  "render_first_kick_onset_ms": 18.62,
+  "orig_kick_vs_grid_median_ms": 5.06,
+  "render_kick_vs_cycle_grid_median_ms": 18.59,
   "alignment_mode": "constant tempo from kick fit: 122.999 BPM (code 122.999), render stretched x1.00000",
   "orig_kick_tempo_fit": {
    "bpm": 122.9986,
    "residual_std_ms": 1.5
   },
-  "applied_offset_ms": -1815.78,
+  "applied_offset_ms": -1816.14,
   "block_shifts_ms": null,
   "kick_offset_ms": {
-   "median": 0.77,
-   "median_abs": 1.18,
-   "p90_abs": 2.27,
+   "median": 0.45,
+   "median_abs": 0.86,
+   "p90_abs": 2.59,
    "n": 121
   },
   "rms_gain_applied_db": 3.34,
@@ -34,7 +34,7 @@
      8
     ],
     "rms_diff_db": 0.12,
-    "kick_offset_ms_median": 0.52,
+    "kick_offset_ms_median": 0.18,
     "spectral_profile_corr": 0.995
    },
    {
@@ -43,7 +43,7 @@
      16
     ],
     "rms_diff_db": -0.01,
-    "kick_offset_ms_median": 0.82,
+    "kick_offset_ms_median": 0.44,
     "spectral_profile_corr": 0.997
    },
    {
@@ -52,7 +52,7 @@
      24
     ],
     "rms_diff_db": -0.04,
-    "kick_offset_ms_median": 0.99,
+    "kick_offset_ms_median": 0.61,
     "spectral_profile_corr": 0.996
    },
    {
@@ -61,7 +61,7 @@
      32
     ],
     "rms_diff_db": -0.07,
-    "kick_offset_ms_median": 0.66,
+    "kick_offset_ms_median": 0.28,
     "spectral_profile_corr": 0.997
    }
   ],
@@ -112,17 +112,17 @@
    "tf_logmel_corr": 0.772
   },
   "vox_alignment": {
-   "offset_ms": 0.66,
-   "peak_corr": 0.482,
-   "corr_at_0": -0.169,
-   "envelope_offset_ms": 0.7,
+   "offset_ms": 0.32,
+   "peak_corr": 0.479,
+   "corr_at_0": 0.147,
+   "envelope_offset_ms": 0.34,
    "envelope_corr": 0.725
   },
   "other_alignment": {
-   "offset_ms": -0.2,
+   "offset_ms": -0.57,
    "peak_corr": 0.109,
-   "corr_at_0": 0.105,
-   "envelope_offset_ms": 2.38,
+   "corr_at_0": 0.096,
+   "envelope_offset_ms": 2.02,
    "envelope_corr": 0.815
   },
   "groups": {
@@ -130,10 +130,10 @@
     "gap_db": {
      "all": 1.08,
      "le150": 1.09,
-     "150_4k": 1.17,
+     "150_4k": 1.16,
      "gt4k": -0.05
     },
-    "tf_logmel_corr": 0.894
+    "tf_logmel_corr": 0.895
    },
    "bass": {
     "gap_db": {
@@ -167,7 +167,7 @@
    "cps": 0.5124958333333333,
    "raw_peak": 1.3221542835235596,
    "scale": 0.6731438313145556,
-   "render_ms": 10112,
+   "render_ms": 10378,
    "seconds": 66.34200278051043
   }
  },

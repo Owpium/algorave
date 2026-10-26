@@ -1,6 +1,11 @@
 # 🎛️ Mémo ALGORAVE
 
 > Shell Windows = **PowerShell**. Si une option ne marche pas : ajoute `--help` au script concerné.
+>
+> ⚠️ Toutes les commandes se lancent **depuis le dossier du projet** (`cd "C:\Users\Jo'\Music\ALGORAVE"`, étape 0)
+> et **avec le préfixe `.\`** : `.\tools\t2s.bat ...`. Sans le `.\` (ou depuis `C:\Users\Jo'`), PowerShell répond
+> « Le module tools n'a pas pu être chargé ». Depuis un autre dossier : chemin complet avec `&` devant, ex.
+> `& "C:\Users\Jo'\Music\ALGORAVE\tools\t2s.bat" batch "D:\Mes WAV"` (le .bat se place tout seul dans le projet).
 
 ## 0. À chaque session
 
@@ -19,7 +24,7 @@ Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
 
 Mets le morceau dans `refs\` (WAV de préférence), puis :
 ```powershell
-tools\t2s.bat "refs\Mon Morceau.wav" --auto-excerpt --slug mon_morceau
+.\tools\t2s.bat "refs\Mon Morceau.wav" --auto-excerpt --slug mon_morceau
 ```
 - `--auto-excerpt` : choisit tout seul 32 mesures du groove principal
 - ou `--start 60 --dur 62` pour choisir le passage (en secondes)
@@ -34,7 +39,7 @@ Environ 2 min. Résultats dans `out\mon_morceau\` :
 
 Mets les morceaux dans un dossier (sous-dossiers OK), puis :
 ```powershell
-tools\t2s.bat batch "D:\Mes WAV" --prune-stems
+.\tools\t2s.bat batch "D:\Mes WAV" --prune-stems
 ```
 - Un morceau après l'autre (≈ 3-8 min chacun la 1re fois), **reprise automatique** : relance la même commande après
   un Ctrl+C, un crash ou l'ajout de fichiers → seuls les nouveaux / modifiés sont traités
@@ -49,7 +54,7 @@ Résultats dans `out\_batch\<nom du dossier>\` :
 - Aperçus à écouter sur le téléphone : `out\_previews\batch\<slug>.mp3`
 - Des FAIL ? Lance `.\.venv\Scripts\python.exe tools\t2s_batch.py triage <nom du lot>` → envoie à Claude
   **seulement** les 1 à 3 `diag.md` indiqués par classe d'échec (pas tous)
-- Libérer de la place après coup : `tools\t2s_batch.py prune <nom du lot>` (`--dry-run` pour voir avant)
+- Libérer de la place après coup : `.\.venv\Scripts\python.exe tools\t2s_batch.py prune <nom du lot>` (`--dry-run` pour voir avant)
 
 ## 2. Écouter / jouer
 
@@ -97,7 +102,7 @@ Indexer (à relancer quand tu ajoutes un pack — voir 3 ter ; ~11 min la 1re fo
 ```powershell
 .\.venv\Scripts\python.exe tools\sampleindex.py scan
 ```
-Stats + licences par pack + 20 fichiers à vérifier à l'oreille : `tools\sampleindex.py stats`
+Stats + licences par pack + 20 fichiers à vérifier à l'oreille : `.\.venv\Scripts\python.exe tools\sampleindex.py stats`
 
 Chercher :
 ```powershell
@@ -133,7 +138,7 @@ Un autre dossier racine (autre disque…) :
 .\.venv\Scripts\python.exe tools\sampleindex.py roots add "E:\Packs" --licence ok
 ```
 (`--licence ok|personal|unknown` force la licence de tous ses packs ; sinon lue dans les .txt/.pdf).
-Voir les racines / packs : `tools\sampleindex.py roots list` · couper une racine : `roots disable <nom>` puis `scan`.
+Voir les racines / packs : `.\.venv\Scripts\python.exe tools\sampleindex.py roots list` · couper une racine : `roots disable <nom>` puis `scan`.
 ⚠️ Une racine **hors de `Music\`** marche dans Strudel mais pas dans le rendu WAV de `generate.py`.
 
 **Avant de publier un morceau généré** : registre des licences de tous les samples utilisés (+ crédits CC-BY) :
@@ -164,7 +169,7 @@ télécharge plutôt les sons CC0 à la main sur freesound.org (et garde leur li
 
 Après une modif des outils :
 ```powershell
-tools\t2s.bat golden
+.\tools\t2s.bat golden
 ```
 `check_golden.py --update` **seulement après validation à l'oreille**.
 

@@ -75,6 +75,23 @@ python tools\t2s_batch.py summary|triage|prune <lot> [--dry-run]
     l'extrait avec `--start/--dur` de `_scan.json` (même fenêtre, pas de demucs sur le morceau entier).
   - ≈ 0,5-0,6 Go → ≈ 80 Mo par morceau (6 min de musique) ; avec `--with-full` ≈ 0,4 Go.
 
+## Lot 1 class fixes (2026-10)
+- **A/B kick placement** (`render_strudel.onsets_near`, `build_compare`): the render's kick windows are centred on
+  `cycle - code_offset_s` (where the cut samples put the kick), and the 25 % threshold sits above the valley before the
+  peak. Before: a slow-rise kick + 40 ms code offset (hard techno 155 BPM) saturated the render onset at -45 ms ->
+  render placed ~50 ms late (Hollaback Girl logmel .31 -> .75, all aligns ~0).
+- **Loop align metric** (`t2s.loop_align`): waveform xcorr peak < `ALIGN_MIN_XCORR_PEAK` (0.1) = noise -> envelope offset.
+- **Sample prefix collision** (`track2strudel.unique_prefix`): `<slug>_full` had the excerpt's prefix -> the run
+  written last replaced the other's sounds in the merged `samples\strudel.json`. Now `<prefix>f` for `_full`.
+- **Kick tempo fit**: kicks split in beat-index segments (beat_this skipped a beat at 150-175 BPM) are re-indexed on
+  the dominant segment's period (Offender, Dame Un Grr now on the kick-fit grid).
+- **Per-16th level**: the NNLS level is always used (`STEPFIT_KEEP_V23_DB` 6 -> 60): the "v2.3 level kept" fallback
+  was the wrong one (Money For Nothing open hat +18 dB).
+- **Long renders** in chunks (`RENDER_CHUNK_CYCLES` 48 + 8 pre-roll): renderPatternAudio cost ~ cycles², a 162-cycle
+  full track timed out after 10 / 40 min. `--timeout-ms` in render.mjs (`RENDER_TIMEOUT_S`).
+- **Batch timeout** counts awake time only (a PC asleep 57 h was reported TIMEOUT).
+- `LOOP_MAX_VARIANTS` (4) exposed; 8 tested on the vocal remixes: +0.007..+0.017 logmel, not kept.
+
 ## v2.5 (2026-10) - acid / HF synth lane (`tools\acid_lane.py`, called by extract_samples)
 - **Status: OFF by default** (`ACID_ENABLE=0` in `t2s_params.py`; to revisit on a lossless WAV). Re-enable with
   `--param ACID_ENABLE=1` (t2s.py / track2strudel.py / check_golden.py); `T2S_NO_ACID=1` still forces it off.

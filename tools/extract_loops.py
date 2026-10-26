@@ -239,7 +239,7 @@ def load_src(out, an, kind, full_dir=None):
     return stem_name, stem, mix, t0, bar_s, nbars, 0
 
 
-def loop_lane(out, an, kind, max_variants=4, write_dir=None, want_chops=False, diag=False, full_dir=None, name=None):
+def loop_lane(out, an, kind, max_variants=None, write_dir=None, want_chops=False, diag=False, full_dir=None, name=None):
     """kind: 'vox' (stems/vocals.wav) or 'other' (stems/other.wav)."""
     stem_name, stem, mix, t0, bar_s, nbars, bar_off = load_src(out, an, kind, full_dir)
     # only bars fully inside the audio
@@ -279,6 +279,7 @@ def loop_lane(out, an, kind, max_variants=4, write_dir=None, want_chops=False, d
     segF = [F[starts[i]:starts[i] + L].ravel() for i in idx]
     thr = max(0.55, scores[L] - 0.12) if scores else 0.8
     masks = [tuple(bool(x) for x in rs[starts[i]:starts[i] + L] > rs[starts[i]:starts[i] + L].max() - 20) for i in idx]
+    max_variants = int(TP.LOOP_MAX_VARIANTS) if max_variants is None else max_variants
     reps, labels, S = cluster(segF, thr, max_variants, masks if L > 1 else None)
     lab = dict(zip(idx, labels))
     seq = [int(lab[i]) if i in lab else None for i in range(len(starts))]

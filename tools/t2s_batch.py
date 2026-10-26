@@ -207,13 +207,18 @@ def run_t2s(args, logf, timeout_s):
         fh.flush()
         p = subprocess.Popen([PY, str(TOOLS / "t2s.py")] + [str(x) for x in args], stdout=fh, stderr=subprocess.STDOUT,
                              cwd=str(ROOT), env=env)
+        # the timeout counts *awake* time: a PC that sleeps / hibernates mid-run (lot1: 57 h asleep) used to be
+        # reported as a TIMEOUT. Poll gaps > 30 s (the poll is 1 s) = suspended, not counted.
+        awake, last = 0.0, time.time()
         try:
             while True:
                 try:
                     rc = p.wait(timeout=1.0)
                     return ("interrupted" if INTERRUPTED and rc != 0 else rc), time.time() - t
                 except subprocess.TimeoutExpired:
-                    if time.time() - t > timeout_s:
+                    now = time.time(); dt = now - last; last = now
+                    awake += dt if dt < 30.0 else 1.0
+                    if awake > timeout_s:
                         kill_tree(p)
                         return "timeout", time.time() - t
                     if INTERRUPTED:

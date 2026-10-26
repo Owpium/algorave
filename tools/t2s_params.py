@@ -49,11 +49,19 @@ PARAMS = {
     "ADD_THR": Param(0.15, 0.05, 0.4, "extract_samples", "NNLS: 16th added when its fitted gain >= this x the loudest 16th"),
     "MIN_STEP_GAIN": Param(0.01, 0.001, 0.05, "extract_samples", "NNLS: fitted 16ths under this are removed"),
     "ADD_MIN_EXPLAINED": Param(0.8, 0.5, 0.95, "extract_samples", "NNLS: adds only when the lane explains >= this of its band"),
+    "STEPFIT_KEEP_V23_DB": Param(60.0, 3.0, 60.0, "extract_samples", "NNLS level more than this under the v2.3 attack-energy level -> v2.3 level kept (dB). Was 6: on lot1 the v2.3 level (attack energy incl. the other lanes) was the wrong one (Money For Nothing oh +18 dB, logmel .70 -> .80, Sohail PASS); 60 = always the fit"),
     "MIN_EXPLAINED": Param(0.10, 0.02, 0.3, "extract_samples", "NNLS: lane explaining less of its band is left commented"),
     # --- extract_loops.py
     "LOOP_VOX_MIN_DB": Param(-24.0, -32.0, -18.0, "extract_loops", "vox bar active if stem RMS vs mix > this (dB)"),
     "LOOP_OTHER_MIN_DB": Param(-26.0, -34.0, -18.0, "extract_loops", "other bar active if stem RMS vs mix > this (dB)"),
+    "LOOP_MAX_VARIANTS": Param(4, 2, 8, "extract_loops", "vox / other loop: max distinct phrases (variants) per lane"),
     "LOOP_OTHER_QUIET_DB": Param(-36.0, -44.0, -28.0, "extract_loops", "same, when basic-pitch found a consistent pitched loop"),
+    # --- t2s.py (acceptance metrics)
+    "ALIGN_MIN_XCORR_PEAK": Param(0.1, 0.02, 0.3, "t2s", "vox / other loop offset: waveform xcorr peak under this -> envelope xcorr offset instead [golden min 0.108]"),
+    # --- render_strudel.py (headless render + A/B metrics)
+    "RENDER_CHUNK_CYCLES": Param(48, 16, 256, "render_strudel", "renders longer than this (+ pre-roll) are done in chunks of this many cycles (cost ~ cycles^2)"),
+    "RENDER_PREROLL_CYCLES": Param(8, 4, 16, "render_strudel", "chunked render: each chunk starts this many cycles earlier (sample tails, loopAt <= 8)"),
+    "RENDER_TIMEOUT_S": Param(900.0, 300.0, 3600.0, "render_strudel", "timeout of one headless render (s)"),
     # --- acid_lane.py (v2.5, called by extract_samples)
     "ACID_ENABLE": Param(0, 0, 1, "acid_lane", "acid lane: 0 = off (default, revisit with a lossless WAV), 1 = on"),
     "ACID_MIN_SWEEP_DB": Param(8.0, 4.0, 16.0, "acid_lane", "acid lane: per-bar brightness (1.5-8k vs 0.2-1.5k) p90-p10 of the 'other' stem on the note steps (dB)"),

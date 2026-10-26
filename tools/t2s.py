@@ -228,6 +228,17 @@ def lanes_in_code(code):
     return out
 
 
+def loop_align(x):
+    """loop offset (ms) of the solo vox / other render vs its stem: waveform cross-correlation, unless its peak is too
+    weak to mean anything (a loop that doesn't phase-match its stem: changing vocal phrases, detuned pads -> the
+    argmax over +-60 ms is noise, e.g. +49.6 ms at peak 0.035) -> the 200 Hz-8 kHz envelope cross-correlation."""
+    if not x or x.get("offset_ms") is None:
+        return None
+    if (x.get("peak_corr") or 0.0) < t2s_params.P.ALIGN_MIN_XCORR_PEAK and x.get("envelope_offset_ms") is not None:
+        return x["envelope_offset_ms"]
+    return x["offset_ms"]
+
+
 def collect(out):
     """compare_strudel.json (samples version) + code -> flat metrics dict (None = not applicable)."""
     slug = out.name
@@ -242,8 +253,8 @@ def collect(out):
     r["per_bar_mae_db"] = g(m, "per_bar_level_corr", "all", "mae_db")
     r["kick_align_ms"] = g(m, "kick_offset_ms", "median_abs")
     r["kick_align_p90_ms"] = g(m, "kick_offset_ms", "p90_abs")
-    r["vox_align_ms"] = g(m, "vox_alignment", "offset_ms")
-    r["other_align_ms"] = g(m, "other_alignment", "offset_ms")
+    r["vox_align_ms"] = loop_align(m.get("vox_alignment"))
+    r["other_align_ms"] = loop_align(m.get("other_alignment"))
     for grp in ("drums", "bass", "other", "vox"):
         r[f"group.{grp}.tf"] = g(m, "groups", grp, "tf_logmel_corr")
         r[f"group.{grp}.gap_db"] = g(m, "groups", grp, "gap_db", "all")

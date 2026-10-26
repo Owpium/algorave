@@ -3,20 +3,20 @@
   "version": "samples",
   "cps": 0.5124958333333333,
   "bars": 34,
-  "render_first_kick_onset_ms": 17.78,
+  "render_first_kick_onset_ms": 18.12,
   "orig_kick_vs_grid_median_ms": 4.99,
-  "render_kick_vs_cycle_grid_median_ms": 17.69,
+  "render_kick_vs_cycle_grid_median_ms": 17.96,
   "alignment_mode": "constant tempo from kick fit: 122.999 BPM (code 122.999), render stretched x1.00000",
   "orig_kick_tempo_fit": {
    "bpm": 122.9994,
    "residual_std_ms": 1.44
   },
-  "applied_offset_ms": -1815.14,
+  "applied_offset_ms": -1815.4,
   "block_shifts_ms": null,
   "kick_offset_ms": {
-   "median": 0.79,
-   "median_abs": 1.04,
-   "p90_abs": 2.51,
+   "median": 0.63,
+   "median_abs": 0.87,
+   "p90_abs": 2.74,
    "n": 122
   },
   "rms_gain_applied_db": 5.76,
@@ -34,7 +34,7 @@
      8
     ],
     "rms_diff_db": 0.06,
-    "kick_offset_ms_median": 0.52,
+    "kick_offset_ms_median": 0.34,
     "spectral_profile_corr": 0.995
    },
    {
@@ -43,7 +43,7 @@
      16
     ],
     "rms_diff_db": -0.12,
-    "kick_offset_ms_median": 0.91,
+    "kick_offset_ms_median": 0.69,
     "spectral_profile_corr": 0.997
    },
    {
@@ -52,7 +52,7 @@
      24
     ],
     "rms_diff_db": 0.1,
-    "kick_offset_ms_median": 0.84,
+    "kick_offset_ms_median": 0.75,
     "spectral_profile_corr": 0.995
    },
    {
@@ -61,7 +61,7 @@
      32
     ],
     "rms_diff_db": -0.06,
-    "kick_offset_ms_median": 0.23,
+    "kick_offset_ms_median": -0.05,
     "spectral_profile_corr": 0.997
    }
   ],
@@ -109,20 +109,20 @@
     -0.08
    ],
    "spectral_profile_corr_all": 0.995,
-   "tf_logmel_corr": 0.852
+   "tf_logmel_corr": 0.853
   },
   "vox_alignment": {
-   "offset_ms": 0.98,
+   "offset_ms": 0.73,
    "peak_corr": 0.511,
-   "corr_at_0": -0.259,
-   "envelope_offset_ms": 1.0,
+   "corr_at_0": -0.224,
+   "envelope_offset_ms": 0.75,
    "envelope_corr": 0.729
   },
   "other_alignment": {
-   "offset_ms": 0.0,
+   "offset_ms": -0.23,
    "peak_corr": 0.108,
-   "corr_at_0": 0.108,
-   "envelope_offset_ms": 2.2,
+   "corr_at_0": 0.103,
+   "envelope_offset_ms": 1.97,
    "envelope_corr": 0.793
   },
   "groups": {
@@ -167,7 +167,7 @@
    "cps": 0.5124958333333333,
    "raw_peak": 1.7655484676361084,
    "scale": 0.5040926467408853,
-   "render_ms": 10309,
+   "render_ms": 10385,
    "seconds": 66.34200278051043
   }
  },

@@ -206,6 +206,20 @@ def kick_tempo_fit(drums_wav, grid, kick_times):
     if keep.sum() < 16:
         return None
     c, *_ = np.linalg.lstsq(A[keep], yk[keep], rcond=None)
+    if keep.mean() < 0.85:
+        # beat_this skipped / doubled a beat somewhere (fast tempi, lot1: It's That Offender 174, Dame Un Grr 152 fell
+        # back to the wobbly beat_this grid): kicks split in index segments -> re-index every onset on the dominant
+        # segment's own beat period, refit
+        k2 = np.round((yk - c[1]) / c[0])
+        A2 = np.vstack([k2, np.ones_like(k2)]).T
+        c2, *_ = np.linalg.lstsq(A2, yk, rcond=None)
+        keep2 = np.abs(yk - A2 @ c2) < 0.005
+        if keep2.sum() >= 16:
+            c2, *_ = np.linalg.lstsq(A2[keep2], yk[keep2], rcond=None)
+            keep2 = np.abs(yk - A2 @ c2) < 0.005
+        if keep2.mean() > keep.mean() and keep2.sum() >= 16:
+            A, keep = A2, keep2
+            c, *_ = np.linalg.lstsq(A[keep], yk[keep], rcond=None)
     res = yk[keep] - A[keep] @ c
     good = bool(np.median(np.abs(res)) < 0.0015 and keep.mean() >= 0.85)
     beat_s, t_beat0 = float(c[0]), float(c[1])
@@ -541,6 +555,29 @@ def previous_prefix(slug):
         return json.loads((ROOT.parent / "samples" / slug / "meta.json").read_text(encoding="utf-8")).get("prefix")
     except Exception:
         return None
+
+
+def unique_prefix(slug, p):
+    """sample names live in ONE merged samples/strudel.json: a prefix already used by another output would make
+    one track play the other's sounds. <slug>_full shared its excerpt's prefix (the 4-letter cut dropped the 'f'):
+    the run written last silently replaced the other's sounds (lot1: 10 excerpt / full pairs). The excerpt keeps its
+    prefix, <slug>_full gets <prefix>f, any other clash a digit."""
+    taken = {}
+    for m in (ROOT.parent / "samples").glob("*/meta.json"):
+        if m.parent.name == slug:
+            continue
+        try:
+            taken.setdefault(json.loads(m.read_text(encoding="utf-8")).get("prefix"), []).append(m.parent.name)
+        except Exception:
+            pass
+    owners = [o for o in taken.get(p, []) if o != slug + "_full"]   # our own _full yields to us
+    if not owners:
+        return p
+    base = p + ("f" if slug.endswith("_full") else "")
+    cand, i = base, 2
+    while [o for o in taken.get(cand, []) if o != slug + "_full"]:
+        cand, i = f"{base}{i}", i + 1
+    return cand
 
 
 def derive_prefix(slug):
@@ -993,7 +1030,7 @@ def main():
     out = Path(a.out) if a.out else ROOT.parent / "out" / slug
     out.mkdir(parents=True, exist_ok=True)
     slug = out.name
-    prefix = a.prefix or previous_prefix(slug) or derive_prefix(slug)
+    prefix = a.prefix or unique_prefix(slug, previous_prefix(slug) or derive_prefix(slug))
     t0 = time.time()
 
     exc = prepare_audio(src, out, a.start, a.dur)

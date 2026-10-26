@@ -1056,7 +1056,7 @@ def samples_code(code, prefix, levels, pitched_ok, loops=None, nudges=None, sect
                     new[-1] += f'.gain("{gstr}")'
                     # level from the same fit (agrees with the v2.3 attack-energy calibration within 0.3 dB when the fit
                     # is clean); a fit > 6 dB under the v2.3 level (dense overlapping 16ths, wrong template) keeps the v2.3 one
-                    if sg["postgain"] >= p / 2:
+                    if sg["postgain"] >= p * 10 ** (-TP.STEPFIT_KEEP_V23_DB / 20):
                         p = sg["postgain"]
                     else:
                         out.append(f"//   {lane}: fitted level {20 * np.log10(sg['postgain'] / p):+.1f} dB vs the v2.3 calibration: v2.3 level kept")
