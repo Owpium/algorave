@@ -349,6 +349,23 @@ def widen(x, side_db=3.0, f_lo=300.0):
     return np.stack([m + sd, m - sd], 1).astype(np.float32)
 
 
+def widen_band(x, side_db, f_lo=160.0, f_hi=700.0):
+    """gain sur les côtés (M/S) dans une bande seulement (passe-bande 2e ordre sur le seul signal des côtés)."""
+    if abs(side_db) < 0.05:
+        return x
+    m = x.mean(1)
+    sd = (x[:, 0] - x[:, 1]) * 0.5
+    b = signal.sosfilt(signal.butter(2, [f_lo, f_hi], "bandpass", fs=SR, output="sos"), sd)
+    sd = sd + (float(db2lin(side_db)) - 1.0) * b
+    return np.stack([m + sd, m - sd], 1).astype(np.float32)
+
+def band_width_db(x, f_lo=150.0, f_hi=400.0):
+    """largeur d'une bande : énergie des côtés / énergie du centre (dB), comme make_qa."""
+    y = signal.sosfilt(signal.butter(4, [f_lo, f_hi], "bandpass", fs=SR / 2, output="sos"), x[::2], axis=0)  # 1 éch. / 2
+    m, s = (y[:, 0] + y[:, 1]) * 0.5, (y[:, 0] - y[:, 1]) * 0.5
+    return float(10 * np.log10((np.mean(s ** 2) + 1e-20) / (np.mean(m ** 2) + 1e-20)))
+
+
 def pseudo_stereo(x, amount=0.5, ms=11.0, f_lo=400.0):
     """élargit une source (quasi) mono sans toucher au centre : côtés = copie retardée (Haas) et filtrée du centre
     au-dessus de f_lo, ajoutée en +S / -S (la somme mono reste identique)."""
@@ -398,7 +415,7 @@ class Mixer:
         if L.get("drive"):
             x = saturate(x, L["drive"], L.get("drive_mix", 0.6))
         if L.get("pseudo"):
-            x = pseudo_stereo(x, L["pseudo"], L.get("pseudo_ms", 11.0))
+            x = pseudo_stereo(x, L["pseudo"], L.get("pseudo_ms", 11.0), L.get("pseudo_hz", self.cfg["pseudo_hz"]))
         if L.get("width"):
             x = widen(x, L["width"])
         if L.get("mono"):
@@ -446,7 +463,7 @@ class Mixer:
         plate = reverb(plate_in, self.irs["plate"]) * float(db2lin(c["plate_db"]))
         hall = reverb(sends.pop("hall"), self.irs["hall"]) * float(db2lin(c["hall_db"]))
         rets = (plate + hall + dly * float(db2lin(c["delay_db"])))
-        rets = widen(rets, c["return_width_db"], 300.0) * ret_duck
+        rets = widen(rets, c["return_width_db"], c["return_width_hz"]) * ret_duck
         buses["music"] += rets
         self.report["returns_rms_db"] = round(rms_db(rets), 1)
         del plate, hall, dly, rets, plate_in
@@ -459,6 +476,23 @@ class Mixer:
                                       auto_thr=c["music_glue_thr"], sc_hpf=200)
         self.report["music_glue_gr_db"] = round(gr, 2)
         buses["music"] = widen(buses["music"], c["music_width_db"], 250.0)
+        # largeur 150-400 Hz du mix ramenée dans [lowmid_target_lo_db, lowmid_target_hi_db] (côtés/centre) en jouant
+        # sur les côtés du bus music entre music_lowmid_lo_hz et _hi_hz (gain borné à ±music_lowmid_width_db)
+        rest = sum(b for k, b in buses.items() if k != "music")
+        w0 = band_width_db(rest + buses["music"])
+        lo_t, hi_t, gmax = c["lowmid_target_lo_db"], c["lowmid_target_hi_db"], c["music_lowmid_width_db"]
+        g, w = 0.0, w0
+        if gmax > 0.05 and not lo_t <= w0 <= hi_t:
+            tgt = lo_t if w0 < lo_t else hi_t
+            for _ in range(3):
+                g = float(np.clip(g + (tgt - w), -gmax, gmax))
+                w = band_width_db(rest + widen_band(buses["music"], g, c["music_lowmid_lo_hz"], c["music_lowmid_hi_hz"]))
+                if abs(w - tgt) < 1.0 or abs(g) >= gmax:
+                    break
+            buses["music"] = widen_band(buses["music"], g, c["music_lowmid_lo_hz"], c["music_lowmid_hi_hz"])
+        del rest
+        self.report["lowmid_width_db"] = [round(w0, 1), round(w, 1)]
+        self.report["music_lowmid_side_db"] = round(g, 1)
         return buses, self.report
 
 
@@ -468,13 +502,18 @@ DEFAULTS = {
     "duck_rel_ms": 150.0, "return_duck": 0.8,
     # returns
     "room_db": -9.0, "plate_db": -7.0, "hall_db": -8.0, "delay_db": -9.0, "delay_beats": 0.75, "delay_fb": 0.5,
-    "delay_to_plate": 0.35, "return_width_db": 1.5,
+    "delay_to_plate": 0.35, "return_width_db": 3.0, "return_width_hz": 150.0,
     # buses
     "bass_mono_hz": 140.0, "drum_glue_ratio": 2.0, "drum_glue_thr": 5.0, "music_glue_ratio": 1.8, "music_glue_thr": 6.0,
     "music_width_db": 0.0,
+    # stéréo : coin bas du pseudo-stéréo (Haas M/S) des couches
+    "pseudo_hz": 400.0,
+    # largeur du bas-médium des couches musicales (refs : -17 / -10 dB côtés/centre à 150-400 Hz)
+    "music_lowmid_width_db": 9.0, "music_lowmid_lo_hz": 160.0, "music_lowmid_hi_hz": 700.0,
+    "lowmid_target_lo_db": -12.0, "lowmid_target_hi_db": -8.0,
     # master
     "target_lufs": -11.0, "ceiling_db": -1.0, "max_limit_db": 3.0, "min_crest_db": 9.6, "mono_hz": 120.0,
-    "master_glue_ratio": 1.5, "master_glue_thr": 4.0, "clip_thr": 0.82,
+    "master_glue_ratio": 1.5, "master_glue_thr": 4.0, "clip_thr": 0.82, "tp_relimit": False,
 }
 
 
@@ -508,6 +547,12 @@ def master(pre, cfg=None):
             break
         target -= 0.5
     tp = true_peak_db(y)
+    for _ in range(3 if c["tp_relimit"] else 0):     # pointes inter-échantillons : on limite plus bas au lieu de baisser tout
+        if tp <= c["ceiling_db"]:
+            break
+        y, grl = limiter(soft_clip(x * g, c["clip_thr"]), c["ceiling_db"] - 0.25 - (tp - c["ceiling_db"]) - 0.1)
+        p99 = float(np.percentile(grl, 99.5))
+        tp = true_peak_db(y)
     if tp > c["ceiling_db"]:
         y = y * float(db2lin(c["ceiling_db"] - tp - 0.02))
         tp = true_peak_db(y)

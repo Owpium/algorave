@@ -29,8 +29,8 @@
    "noclap": false,
    "bars": 8,
    "start": 48,
-   "break_depth_before_db": 14.0,
-   "extra_cut_db": 0.0
+   "break_depth_before_db": 12.5,
+   "extra_cut_db": 0.5
   },
   {
    "type": "groove",
@@ -47,8 +47,8 @@
    "noclap": false,
    "bars": 16,
    "start": 72,
-   "break_depth_before_db": 10.0,
-   "extra_cut_db": 3.0
+   "break_depth_before_db": 8.5,
+   "extra_cut_db": 4.5
   },
   {
    "type": "drop",
@@ -64,8 +64,8 @@
    "noclap": false,
    "bars": 8,
    "start": 120,
-   "break_depth_before_db": 13.8,
-   "extra_cut_db": 0.0
+   "break_depth_before_db": 12.4,
+   "extra_cut_db": 0.6
   },
   {
    "type": "groove",
@@ -118,9 +118,9 @@
   "impact": -11.0
  },
  "balance": {
-  "side_db": -2.7,
-  "width_before_db": -5.6,
-  "width_after_db": -7.6,
+  "side_db": 0.0,
+  "width_before_db": -6.9,
+  "width_after_db": -6.9,
   "kick_punch_db": 3.0,
   "kick_sub_db": 3.0,
   "bass_db": 0.0,
@@ -161,20 +161,25 @@
  },
  "mix": {
   "duck_p95_db": 9.0,
-  "returns_rms_db": -39.6,
+  "returns_rms_db": -38.7,
   "drum_glue_gr_db": 1.71,
-  "music_glue_gr_db": 2.54
+  "music_glue_gr_db": 2.59,
+  "lowmid_width_db": [
+   -23.6,
+   -15.9
+  ],
+  "music_lowmid_side_db": 9.0
  },
  "master": {
-  "premaster_lufs": -18.79,
+  "premaster_lufs": -18.94,
   "glue_gr_db": 1.23,
   "target_lufs": -11.5,
-  "lufs": -12.09,
+  "lufs": -12.13,
   "true_peak_db": -1.02,
-  "gain_db": 7.9,
-  "limiter_p99_5_db": 1.21,
-  "limiter_active_pct": 44.5,
-  "crest_db": 9.93
+  "gain_db": 8.11,
+  "limiter_p99_5_db": 1.22,
+  "limiter_active_pct": 48.0,
+  "crest_db": 9.81
  },
  "engine": {
   "duck_db": 9.0,
@@ -191,13 +196,20 @@
   "delay_beats": 0.75,
   "delay_fb": 0.5,
   "delay_to_plate": 0.35,
-  "return_width_db": 1.5,
+  "return_width_db": 3.0,
+  "return_width_hz": 150.0,
   "bass_mono_hz": 140.0,
   "drum_glue_ratio": 2.0,
   "drum_glue_thr": 5.0,
   "music_glue_ratio": 1.8,
   "music_glue_thr": 6.0,
   "music_width_db": 0.0,
+  "pseudo_hz": 400.0,
+  "music_lowmid_width_db": 9.0,
+  "music_lowmid_lo_hz": 160.0,
+  "music_lowmid_hi_hz": 700.0,
+  "lowmid_target_lo_db": -14.0,
+  "lowmid_target_hi_db": -8.0,
   "target_lufs": -11.0,
   "ceiling_db": -1.0,
   "max_limit_db": 3.0,
@@ -205,7 +217,8 @@
   "mono_hz": 120.0,
   "master_glue_ratio": 1.5,
   "master_glue_thr": 4.0,
-  "clip_thr": 0.82
+  "clip_thr": 0.82,
+  "tp_relimit": false
  },
  "lib": {
   "bass": {
@@ -281,7 +294,7 @@
    "pack_id": "sas023"
   }
  },
- "qa_ok": false,
+ "qa_ok": true,
  "master_wav": "mk-gsm-s1 - 124bpm - 1A.wav",
  "preview": "out\\_previews\\make\\mk-gsm-s1.mp3"
 }

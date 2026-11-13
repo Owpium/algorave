@@ -1,26 +1,26 @@
 {
- "ok": false,
+ "ok": true,
  "measures": {
   "window_s": [
    170.0,
    230.0
   ],
-  "lr_corr": 0.974,
-  "crest": 9.927,
-  "sub_20_60": -6.977,
-  "lowmid_150_400": -9.85,
-  "air_10k": -26.595,
-  "width_sub": -53.988,
-  "width_150_400": -28.445,
-  "width_1k_4k": -7.422,
-  "width_4k_10k": -7.596,
-  "kick_transient": 15.423,
+  "lr_corr": 0.947,
+  "crest": 9.807,
+  "sub_20_60": -7.027,
+  "lowmid_150_400": -9.89,
+  "air_10k": -26.185,
+  "width_sub": -53.459,
+  "width_150_400": -22.041,
+  "width_1k_4k": -6.719,
+  "width_4k_10k": -4.957,
+  "kick_transient": 15.421,
   "events": 499.0,
-  "timbre_move": 1.537,
+  "timbre_move": 1.533,
   "chroma_move": 0.064,
-  "contrast": 14.488,
-  "break_drop": 12.517,
-  "lufs": -12.093,
+  "contrast": 13.165,
+  "break_drop": 11.996,
+  "lufs": -12.127,
   "true_peak": -1.02,
   "duration_s": 344.516
  },
@@ -28,11 +28,11 @@
   {
    "key": "lr_corr",
    "label": "Corr\u00e9lation G/D",
-   "value": 0.974,
+   "value": 0.947,
    "min": null,
    "max": 0.97,
    "unit": "",
-   "ok": false,
+   "ok": true,
    "refs": {
     "Groove With It": 0.98,
     "frink-deeply": 0.961
@@ -41,7 +41,7 @@
   {
    "key": "width_1k_4k",
    "label": "Largeur 1-4 kHz (c\u00f4t\u00e9s/centre)",
-   "value": -7.422,
+   "value": -6.719,
    "min": -12.0,
    "max": -5.0,
    "unit": "dB",
@@ -54,7 +54,7 @@
   {
    "key": "width_sub",
    "label": "Sub mono : largeur 20-120 Hz",
-   "value": -53.988,
+   "value": -53.459,
    "min": null,
    "max": -25.0,
    "unit": "dB",
@@ -67,7 +67,7 @@
   {
    "key": "crest",
    "label": "Cr\u00eate / RMS",
-   "value": 9.927,
+   "value": 9.807,
    "min": 9.0,
    "max": null,
    "unit": "dB",
@@ -80,7 +80,7 @@
   {
    "key": "contrast",
    "label": "\u00c9cart de niveau entre mesures (P95-P5)",
-   "value": 14.488,
+   "value": 13.165,
    "min": 9.0,
    "max": null,
    "unit": "dB",
@@ -93,7 +93,7 @@
   {
    "key": "sub_20_60",
    "label": "Sub 20-60 Hz / total",
-   "value": -6.977,
+   "value": -7.027,
    "min": -8.0,
    "max": -4.0,
    "unit": "dB",
@@ -106,7 +106,7 @@
   {
    "key": "kick_transient",
    "label": "Transitoire du kick 60-150 Hz",
-   "value": 15.423,
+   "value": 15.421,
    "min": 13.059,
    "max": null,
    "unit": "dB",
@@ -132,7 +132,7 @@
   {
    "key": "timbre_move",
    "label": "Changement de timbre mesure \u00e0 mesure",
-   "value": 1.537,
+   "value": 1.533,
    "min": 0.714,
    "max": null,
    "unit": "dB mel",
@@ -145,7 +145,7 @@
   {
    "key": "lufs",
    "label": "Loudness int\u00e9gr\u00e9",
-   "value": -12.093,
+   "value": -12.127,
    "min": -12.5,
    "max": -9.5,
    "unit": "LUFS",
@@ -171,7 +171,7 @@
   {
    "key": "width_150_400",
    "label": "Largeur 150-400 Hz",
-   "value": -28.445,
+   "value": -22.041,
    "min": null,
    "max": null,
    "unit": "dB",
@@ -184,7 +184,7 @@
   {
    "key": "width_4k_10k",
    "label": "Largeur 4-10 kHz",
-   "value": -7.596,
+   "value": -4.957,
    "min": null,
    "max": null,
    "unit": "dB",
@@ -197,7 +197,7 @@
   {
    "key": "lowmid_150_400",
    "label": "Bas-m\u00e9dium 150-400 Hz / total",
-   "value": -9.85,
+   "value": -9.89,
    "min": null,
    "max": null,
    "unit": "dB",
@@ -210,7 +210,7 @@
   {
    "key": "air_10k",
    "label": "Air > 10 kHz / total",
-   "value": -26.595,
+   "value": -26.185,
    "min": null,
    "max": null,
    "unit": "dB",
@@ -236,7 +236,7 @@
   {
    "key": "break_drop",
    "label": "\u00c9cart de niveau P90-P10",
-   "value": 12.517,
+   "value": 11.996,
    "min": null,
    "max": null,
    "unit": "dB",

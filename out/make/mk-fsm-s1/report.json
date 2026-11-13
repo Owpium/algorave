@@ -29,8 +29,8 @@
    "noclap": false,
    "bars": 8,
    "start": 48,
-   "break_depth_before_db": 10.1,
-   "extra_cut_db": 2.9
+   "break_depth_before_db": 9.8,
+   "extra_cut_db": 3.2
   },
   {
    "type": "groove",
@@ -47,8 +47,8 @@
    "noclap": false,
    "bars": 16,
    "start": 72,
-   "break_depth_before_db": 9.4,
-   "extra_cut_db": 3.6
+   "break_depth_before_db": 9.1,
+   "extra_cut_db": 3.9
   },
   {
    "type": "drop",
@@ -64,8 +64,8 @@
    "noclap": false,
    "bars": 8,
    "start": 120,
-   "break_depth_before_db": 10.2,
-   "extra_cut_db": 2.8
+   "break_depth_before_db": 9.9,
+   "extra_cut_db": 3.1
   },
   {
    "type": "groove",
@@ -156,19 +156,24 @@
  },
  "mix": {
   "duck_p95_db": 9.0,
-  "returns_rms_db": -37.1,
+  "returns_rms_db": -36.1,
   "drum_glue_gr_db": 1.64,
-  "music_glue_gr_db": 2.75
+  "music_glue_gr_db": 2.75,
+  "lowmid_width_db": [
+   -12.8,
+   -12.0
+  ],
+  "music_lowmid_side_db": 0.8
  },
  "master": {
-  "premaster_lufs": -19.39,
+  "premaster_lufs": -19.37,
   "glue_gr_db": 1.38,
   "target_lufs": -12.0,
-  "lufs": -12.42,
+  "lufs": -12.41,
   "true_peak_db": -1.02,
   "gain_db": 7.96,
   "limiter_p99_5_db": 1.2,
-  "limiter_active_pct": 52.0,
+  "limiter_active_pct": 51.9,
   "crest_db": 10.04
  },
  "engine": {
@@ -186,13 +191,20 @@
   "delay_beats": 0.75,
   "delay_fb": 0.5,
   "delay_to_plate": 0.35,
-  "return_width_db": 1.5,
+  "return_width_db": 3.0,
+  "return_width_hz": 150.0,
   "bass_mono_hz": 140.0,
   "drum_glue_ratio": 2.0,
   "drum_glue_thr": 5.0,
   "music_glue_ratio": 1.8,
   "music_glue_thr": 6.0,
   "music_width_db": 0.0,
+  "pseudo_hz": 400.0,
+  "music_lowmid_width_db": 9.0,
+  "music_lowmid_lo_hz": 160.0,
+  "music_lowmid_hi_hz": 700.0,
+  "lowmid_target_lo_db": -12.0,
+  "lowmid_target_hi_db": -8.0,
   "target_lufs": -11.0,
   "ceiling_db": -1.0,
   "max_limit_db": 3.0,
@@ -200,7 +212,8 @@
   "mono_hz": 120.0,
   "master_glue_ratio": 1.5,
   "master_glue_thr": 4.0,
-  "clip_thr": 0.82
+  "clip_thr": 0.82,
+  "tp_relimit": false
  },
  "lib": {
   "bass": {

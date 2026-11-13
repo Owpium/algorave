@@ -1,0 +1,437 @@
+{
+ "name": "mk-deep-120",
+ "seed": 1,
+ "bpm": 120.0,
+ "key": "A minor",
+ "camelot": "8A",
+ "kit": "deeper_house:instruments",
+ "ref": "groove_with_it_wav_full",
+ "harmony": {
+  "chords": [
+   "Am7",
+   "Am9",
+   "Fmaj7",
+   "G7"
+  ],
+  "instruments": {
+   "bass": "deeper_house:AlloyBass",
+   "hook": "deeper_house:Cloaker",
+   "second": "deeper_house:RushArp",
+   "pad": "deeper_house:Fadapad"
+  }
+ },
+ "bars": 160,
+ "plan": [
+  {
+   "type": "intro",
+   "bars": 16,
+   "start": 0
+  },
+  {
+   "type": "groove",
+   "ref_bars": 44,
+   "noclap": true,
+   "bars": 16,
+   "start": 16,
+   "gi": 0,
+   "after_drop": false
+  },
+  {
+   "type": "break",
+   "ref_bars": 4,
+   "noclap": false,
+   "bars": 8,
+   "start": 32,
+   "break_depth_before_db": 8.0,
+   "extra_cut_db": 5.0
+  },
+  {
+   "type": "groove",
+   "ref_bars": 32,
+   "noclap": false,
+   "bars": 16,
+   "start": 40,
+   "gi": 1,
+   "after_drop": false
+  },
+  {
+   "type": "bigbreak",
+   "ref_bars": 8,
+   "noclap": false,
+   "bars": 16,
+   "start": 56,
+   "break_depth_before_db": 7.9,
+   "extra_cut_db": 5.1
+  },
+  {
+   "type": "drop",
+   "ref_bars": 36,
+   "noclap": false,
+   "bars": 32,
+   "start": 72,
+   "gi": 2
+  },
+  {
+   "type": "break",
+   "ref_bars": 4,
+   "noclap": false,
+   "bars": 8,
+   "start": 104,
+   "break_depth_before_db": 8.0,
+   "extra_cut_db": 5.0
+  },
+  {
+   "type": "groove",
+   "ref_bars": 70,
+   "noclap": false,
+   "bars": 32,
+   "start": 112,
+   "gi": 3,
+   "after_drop": true
+  },
+  {
+   "type": "outro",
+   "bars": 16,
+   "start": 144
+  }
+ ],
+ "offbeat_delay_ms": 20.0,
+ "kick_f0_hz": 58.54339599609375,
+ "kick_tune_semitones": -1.08,
+ "patterns": {
+  "perc": [
+   3,
+   7,
+   13
+  ],
+  "perc2": [
+   1,
+   10
+  ],
+  "ghost": [
+   5,
+   7
+  ]
+ },
+ "lane_gain_db": {
+  "kick": -6.0,
+  "clap": -14.5,
+  "hat": -25.8,
+  "hat2": -20.1,
+  "ohat": -22.0,
+  "perc": -23.8,
+  "shaker": -30.2,
+  "roll": -16.8,
+  "topA": -1.1,
+  "topB": -4.2,
+  "topC": -8.2,
+  "bass": 4.3,
+  "hook": -2.9,
+  "second": -5.9,
+  "pad": -12.2,
+  "swell": -19.0,
+  "impact": -11.0
+ },
+ "balance": {
+  "side_db": -3.2,
+  "width_before_db": -5.0,
+  "width_after_db": -7.6,
+  "kick_punch_db": 3.0,
+  "kick_sub_db": -6.0,
+  "bass_db": 0.0,
+  "eq_db": [
+   1.0,
+   -4.0,
+   -4.0,
+   1.2,
+   -3.8,
+   -1.9
+  ],
+  "steps": [
+   [
+    14.8,
+    -3.8
+   ],
+   [
+    15.5,
+    -3.7
+   ],
+   [
+    16.2,
+    -3.6
+   ],
+   [
+    16.5,
+    -3.9
+   ],
+   [
+    16.9,
+    -4.4
+   ],
+   [
+    17.5,
+    -4.9
+   ],
+   [
+    18.0,
+    -5.4
+   ]
+  ],
+  "window_s": [
+   145.0,
+   205.0
+  ]
+ },
+ "mix": {
+  "duck_p95_db": 10.0,
+  "returns_rms_db": -33.9,
+  "drum_glue_gr_db": 1.59,
+  "music_glue_gr_db": 2.86,
+  "lowmid_width_db": [
+   -5.7,
+   -7.6
+  ],
+  "music_lowmid_side_db": -2.3
+ },
+ "master": {
+  "premaster_lufs": -22.54,
+  "glue_gr_db": 1.71,
+  "target_lufs": -12.0,
+  "lufs": -12.15,
+  "true_peak_db": -1.01,
+  "gain_db": 11.37,
+  "limiter_p99_5_db": 1.53,
+  "limiter_active_pct": 52.0,
+  "crest_db": 9.89
+ },
+ "engine": {
+  "duck_db": 10.0,
+  "duck_thr_db": -34.0,
+  "duck_range_db": 16.0,
+  "duck_att_ms": 2.0,
+  "duck_hold_ms": 45.0,
+  "duck_rel_ms": 150.0,
+  "return_duck": 0.8,
+  "room_db": -9.0,
+  "plate_db": -6.0,
+  "hall_db": -5.5,
+  "delay_db": -9.0,
+  "delay_beats": 0.75,
+  "delay_fb": 0.5,
+  "delay_to_plate": 0.35,
+  "return_width_db": 3.0,
+  "return_width_hz": 150.0,
+  "bass_mono_hz": 140.0,
+  "drum_glue_ratio": 2.0,
+  "drum_glue_thr": 5.0,
+  "music_glue_ratio": 1.8,
+  "music_glue_thr": 6.0,
+  "music_width_db": 0.0,
+  "pseudo_hz": 400.0,
+  "music_lowmid_width_db": 9.0,
+  "music_lowmid_lo_hz": 160.0,
+  "music_lowmid_hi_hz": 700.0,
+  "lowmid_target_lo_db": -14.0,
+  "lowmid_target_hi_db": -8.0,
+  "target_lufs": -11.0,
+  "ceiling_db": -1.0,
+  "max_limit_db": 3.0,
+  "min_crest_db": 9.6,
+  "mono_hz": 120.0,
+  "master_glue_ratio": 1.5,
+  "master_glue_thr": 4.0,
+  "clip_thr": 0.82,
+  "tp_relimit": true
+ },
+ "lib": {
+  "topA": {
+   "path": "Samples/Deeper House/120bpm/DH_BeatA-Tops-120-01.wav",
+   "strudel": "libx_drumloop:86",
+   "licence": "unknown",
+   "pack_id": "deeper_house"
+  },
+  "topB": {
+   "path": "Samples/Deeper House/120bpm/DH_BeatB_Tops_120-02.wav",
+   "strudel": "libx_drumloop:53",
+   "licence": "unknown",
+   "pack_id": "deeper_house"
+  },
+  "topC": {
+   "path": "Samples/Deeper House/120bpm/DH_BeatC_Tops_120-02.wav",
+   "strudel": "libx_drumloop:89",
+   "licence": "unknown",
+   "pack_id": "deeper_house"
+  },
+  "kick": {
+   "path": "Samples/Deeper House/Drum Kits/Kit B Hits/DH_DHitB_Kick03.wav",
+   "strudel": "libx_kick:87",
+   "licence": "unknown",
+   "pack_id": "deeper_house"
+  },
+  "clap": {
+   "path": "Samples/Deeper House/Drum Kits/Kit B Hits/DH_DHitB_Clap.wav",
+   "strudel": "libx_clap:62",
+   "licence": "unknown",
+   "pack_id": "deeper_house"
+  },
+  "hat": {
+   "path": "Samples/Deeper House/Drum Kits/Kit B Hits/DH_DHitB_Hat02.wav",
+   "strudel": "libx_hh:68",
+   "licence": "unknown",
+   "pack_id": "deeper_house"
+  },
+  "hat2": {
+   "path": "Samples/Deeper House/Drum Kits/Kit A Hits/DH_DHitA-Hat01.wav",
+   "strudel": "libx_hh:69",
+   "licence": "unknown",
+   "pack_id": "deeper_house"
+  },
+  "ohat": {
+   "path": "Samples/Deeper House/Drum Kits/Kit B Hits/DH_DHitB_Hat03.wav",
+   "strudel": "libx_oh:7",
+   "licence": "unknown",
+   "pack_id": "deeper_house"
+  },
+  "perc": {
+   "path": "Samples/Deeper House/Drum Kits/Kit B Hits/DH_DHitB_Perc.wav",
+   "strudel": "libx_perc:21",
+   "licence": "unknown",
+   "pack_id": "deeper_house"
+  },
+  "shaker": {
+   "path": "Samples/Deeper House/Drum Kits/Kit A Hits/DH_DHitA-Shaker01.wav",
+   "strudel": "libx_shaker:0",
+   "licence": "unknown",
+   "pack_id": "deeper_house"
+  },
+  "bass:A1": {
+   "path": "Samples/Deeper House/Instruments/AlloyBass/DH_AlloyBass-A1.wav",
+   "strudel": "libx_bassloop:55",
+   "licence": "unknown",
+   "pack_id": "deeper_house"
+  },
+  "bass:D#2": {
+   "path": "Samples/Deeper House/Instruments/AlloyBass/DH_AlloyBass-D#2.wav",
+   "strudel": "libx_bassloop:56",
+   "licence": "unknown",
+   "pack_id": "deeper_house"
+  },
+  "bass:F#2": {
+   "path": "Samples/Deeper House/Instruments/AlloyBass/DH_AlloyBass-F#2.wav",
+   "strudel": "libx_bassloop:61",
+   "licence": "unknown",
+   "pack_id": "deeper_house"
+  },
+  "bass:A2": {
+   "path": "Samples/Deeper House/Instruments/AlloyBass/DH_AlloyBass-A2.wav",
+   "strudel": "libx_bassloop:62",
+   "licence": "unknown",
+   "pack_id": "deeper_house"
+  },
+  "bass:C3": {
+   "path": "Samples/Deeper House/Instruments/AlloyBass/DH_AlloyBass-C3.wav",
+   "strudel": "libx_bassloop:60",
+   "licence": "unknown",
+   "pack_id": "deeper_house"
+  },
+  "bass:D#3": {
+   "path": "Samples/Deeper House/Instruments/AlloyBass/DH_AlloyBass-D#3.wav",
+   "strudel": "libx_bassloop:83",
+   "licence": "unknown",
+   "pack_id": "deeper_house"
+  },
+  "bass:F#3": {
+   "path": "Samples/Deeper House/Instruments/AlloyBass/DH_AlloyBass-F#3.wav",
+   "strudel": "libx_bassloop:84",
+   "licence": "unknown",
+   "pack_id": "deeper_house"
+  },
+  "hook:F#3": {
+   "path": "Samples/Deeper House/Instruments/Cloaker/DH_Cloaker-F#3.wav",
+   "strudel": "libx_synthloop:68",
+   "licence": "unknown",
+   "pack_id": "deeper_house"
+  },
+  "hook:A3": {
+   "path": "Samples/Deeper House/Instruments/Cloaker/DH_Cloaker-A3.wav",
+   "strudel": "libx_synthloop:61",
+   "licence": "unknown",
+   "pack_id": "deeper_house"
+  },
+  "hook:C4": {
+   "path": "Samples/Deeper House/Instruments/Cloaker/DH_Cloaker-C4.wav",
+   "strudel": "libx_synthloop:64",
+   "licence": "unknown",
+   "pack_id": "deeper_house"
+  },
+  "hook:D#4": {
+   "path": "Samples/Deeper House/Instruments/Cloaker/DH_Cloaker-D#4.wav",
+   "strudel": "libx_synthloop:67",
+   "licence": "unknown",
+   "pack_id": "deeper_house"
+  },
+  "hook:F#4": {
+   "path": "Samples/Deeper House/Instruments/Cloaker/DH_Cloaker-F#4.wav",
+   "strudel": "libx_synthloop:69",
+   "licence": "unknown",
+   "pack_id": "deeper_house"
+  },
+  "second:D#4": {
+   "path": "Samples/Deeper House/Instruments/RushArp/DH_RushArp-D#4.wav",
+   "strudel": "libx_synth:27",
+   "licence": "unknown",
+   "pack_id": "deeper_house"
+  },
+  "second:F#4": {
+   "path": "Samples/Deeper House/Instruments/RushArp/DH_RushArp-F#4.wav",
+   "strudel": "libx_synthloop:52",
+   "licence": "unknown",
+   "pack_id": "deeper_house"
+  },
+  "second:A4": {
+   "path": "Samples/Deeper House/Instruments/RushArp/DH_RushArp-A4.wav",
+   "strudel": "libx_synth:24",
+   "licence": "unknown",
+   "pack_id": "deeper_house"
+  },
+  "second:C5": {
+   "path": "Samples/Deeper House/Instruments/RushArp/DH_RushArp-C5.wav",
+   "strudel": "libx_synth:25",
+   "licence": "unknown",
+   "pack_id": "deeper_house"
+  },
+  "pad:C3": {
+   "path": "Samples/Deeper House/Instruments/Fadapad/DH_Fadapad-C3.wav",
+   "strudel": "libx_synthloop:74",
+   "licence": "unknown",
+   "pack_id": "deeper_house"
+  },
+  "pad:D#3": {
+   "path": "Samples/Deeper House/Instruments/Fadapad/DH_Fadapad-D#3.wav",
+   "strudel": "libx_synthloop:78",
+   "licence": "unknown",
+   "pack_id": "deeper_house"
+  },
+  "pad:F#3": {
+   "path": "Samples/Deeper House/Instruments/Fadapad/DH_Fadapad-F#3.wav",
+   "strudel": "libx_synthloop:81",
+   "licence": "unknown",
+   "pack_id": "deeper_house"
+  },
+  "pad:A3": {
+   "path": "Samples/Deeper House/Instruments/Fadapad/DH_Fadapad-A3.wav",
+   "strudel": "libx_synthloop:71",
+   "licence": "unknown",
+   "pack_id": "deeper_house"
+  },
+  "pad:C4": {
+   "path": "Samples/Deeper House/Instruments/Fadapad/DH_Fadapad-C4.wav",
+   "strudel": "libx_synthloop:75",
+   "licence": "unknown",
+   "pack_id": "deeper_house"
+  }
+ },
+ "qa_ok": true,
+ "master_wav": "mk-deep-120 - 120bpm - 8A.wav",
+ "preview": "out\\_previews\\make\\mk-deep-120.mp3"
+}

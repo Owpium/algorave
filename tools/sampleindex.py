@@ -192,6 +192,7 @@ def file_licence(path):
 # ---------------------------------------------------------------- keyword rules
 def norm_tokens(s):
     s = re.sub(r"([a-z])([A-Z])", r"\1 \2", s)
+    s = re.sub(r"([A-Za-z]{3,})(\d)", r"\1 \2", s)     # « Kick01 », « Hat3 » -> mot + numéro (« 808 », « C3 » intacts)
     s = s.lower().replace("&", " ")
     return [t for t in re.split(r"[^a-z0-9#]+", s) if t]
 
@@ -817,7 +818,8 @@ def cmd_scan(a):
     for pack, rel, pd in files:
         st = (pd / rel).stat()
         o = old.get((pack, rel))
-        if o and "error" not in o and o.get("size") == st.st_size and o.get("mtime") == int(st.st_mtime):
+        redo = bool(a.pack) and a.pack.lower() in pack.lower()
+        if o and "error" not in o and o.get("size") == st.st_size and o.get("mtime") == int(st.st_mtime) and not redo:
             keep.append(o)
         else:
             todo.append((pack, rel, a.full, str(pd)))
@@ -1232,7 +1234,7 @@ def find_instruments(idx, pack=None, licence="any", min_notes=5):
     -> liste de {id, pack, pack_id, folder, name, cat, licence, notes: {midi: entrée de l'index}, checked, octave_shift}."""
     groups = {}
     for s in idx["samples"]:
-        if "error" in s or s.get("kind") != "oneshot":
+        if "error" in s:                 # multi-échantillons à boucle de sustain : souvent classés « loop »
             continue
         if pack and pack.lower() not in (s["pack"] + " " + s.get("pack_id", "")).lower():
             continue
@@ -1379,6 +1381,7 @@ def main():
     p = sp.add_parser("scan")
     p.add_argument("--workers", type=int, default=max(1, (os.cpu_count() or 4) - 1))
     p.add_argument("--full", action="store_true", help="re-analyse every file")
+    p.add_argument("--pack", help="re-analyse only the packs whose folder contains this text (other files kept as is)")
     p.add_argument("--rerank", action="store_true", help="re-assign the Strudel names by quality (changes lib_x:n of "
                    "existing tracks!); default = stable names, new files appended")
     p = sp.add_parser("stats")

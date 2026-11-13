@@ -29,8 +29,8 @@
    "noclap": false,
    "bars": 8,
    "start": 48,
-   "break_depth_before_db": 11.5,
-   "extra_cut_db": 1.5
+   "break_depth_before_db": 11.2,
+   "extra_cut_db": 1.8
   },
   {
    "type": "groove",
@@ -47,8 +47,8 @@
    "noclap": false,
    "bars": 16,
    "start": 72,
-   "break_depth_before_db": 12.9,
-   "extra_cut_db": 0.1
+   "break_depth_before_db": 12.7,
+   "extra_cut_db": 0.3
   },
   {
    "type": "drop",
@@ -64,8 +64,8 @@
    "noclap": false,
    "bars": 8,
    "start": 120,
-   "break_depth_before_db": 11.7,
-   "extra_cut_db": 1.3
+   "break_depth_before_db": 11.4,
+   "extra_cut_db": 1.6
   },
   {
    "type": "groove",
@@ -118,8 +118,8 @@
   "impact": -11.0
  },
  "balance": {
-  "side_db": -2.9,
-  "width_before_db": -5.4,
+  "side_db": -2.8,
+  "width_before_db": -5.5,
   "width_after_db": -7.8,
   "kick_punch_db": 4.5,
   "kick_sub_db": 0.0,
@@ -129,7 +129,7 @@
    4.0,
    2.6,
    3.3,
-   0.5,
+   0.4,
    0.8
   ],
   "steps": [
@@ -157,9 +157,14 @@
  },
  "mix": {
   "duck_p95_db": 9.0,
-  "returns_rms_db": -41.7,
+  "returns_rms_db": -40.8,
   "drum_glue_gr_db": 1.92,
-  "music_glue_gr_db": 2.8
+  "music_glue_gr_db": 2.82,
+  "lowmid_width_db": [
+   -14.5,
+   -12.4
+  ],
+  "music_lowmid_side_db": 2.5
  },
  "master": {
   "premaster_lufs": -20.17,
@@ -169,7 +174,7 @@
   "true_peak_db": -1.04,
   "gain_db": 9.26,
   "limiter_p99_5_db": 1.25,
-  "limiter_active_pct": 51.0,
+  "limiter_active_pct": 51.2,
   "crest_db": 9.65
  },
  "engine": {
@@ -187,13 +192,20 @@
   "delay_beats": 0.75,
   "delay_fb": 0.5,
   "delay_to_plate": 0.35,
-  "return_width_db": 1.5,
+  "return_width_db": 3.0,
+  "return_width_hz": 150.0,
   "bass_mono_hz": 140.0,
   "drum_glue_ratio": 2.0,
   "drum_glue_thr": 5.0,
   "music_glue_ratio": 1.8,
   "music_glue_thr": 6.0,
   "music_width_db": 0.0,
+  "pseudo_hz": 400.0,
+  "music_lowmid_width_db": 9.0,
+  "music_lowmid_lo_hz": 160.0,
+  "music_lowmid_hi_hz": 700.0,
+  "lowmid_target_lo_db": -12.0,
+  "lowmid_target_hi_db": -8.0,
   "target_lufs": -11.0,
   "ceiling_db": -1.0,
   "max_limit_db": 3.0,
@@ -201,7 +213,8 @@
   "mono_hz": 120.0,
   "master_glue_ratio": 1.5,
   "master_glue_thr": 4.0,
-  "clip_thr": 0.82
+  "clip_thr": 0.82,
+  "tp_relimit": false
  },
  "lib": {
   "bass": {

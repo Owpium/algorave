@@ -72,15 +72,26 @@ Résultats dans `out\_batch\<nom du dossier>\` :
 
 Un kit de construction (boucles d'un pack) + des one-shots de la bibliothèque, arrangés comme une référence et
 **mixés par un moteur audio Python** (sidechain réel, reverbs, largeur stéréo, mastering doux ≈ −11 LUFS). Aucun LLM.
+Les 3 commandes à taper (PowerShell, depuis le dossier `ALGORAVE`) :
 ```powershell
+# 1) house mélodique : kit de construction Samplesound Atlant, en F# mineur
 .\tools\make.bat --kit sas131 --key F# --seed 1
+# 2) deep house : accords 7e/9e + basse joués avec les instruments du pack Deeper House (change --seed pour une autre version)
+.\tools\make.bat --instruments "Deeper House" --allow-unknown --key Am --bpm 120 --seed 2 --offbeat-ms 20 --name mk-deep-120-s2
+# 3) contrôler un WAV quelconque avec les mêmes mesures
+.\tools\make.bat qa "out\make\mk-deep-120\mk-deep-120 - 120bpm - 8A.wav" --bpm 120
 ```
+- Mode **deep house** (`--instruments "Deeper House"`) : progression de 4 accords 7e / 9e (Fadapad / Cloaker), basse dans la
+  gamme (AlloyBass / BowlaBass / TalliBass) sur les fondamentales, sidechain sur le kick, batterie = hits des kits A/B/C du
+  pack + ses boucles « Tops ». `--key` et `--bpm` libres (les boucles de tops existent à 120 / 124 / 126).
+  `--allow-unknown` est obligatoire : la licence du pack n'est pas écrite (voir § 3 bis) → **usage perso** tant qu'elle n'est pas vérifiée.
 - `--key` : tonalité du kit (`.\tools\make.bat --list-kits` pour voir les kits, leur tonalité **mesurée** et leur tempo)
 - `--seed` : change le nombre = autres one-shots, autre découpage des boucles · `--n 3` : 3 variantes d'un coup
 - `--ref groove_with_it_wav_full` : la référence dont on reprend la **structure** et les placements de batterie (jamais les notes)
 - `--length-min 5.6` · `--intro-bars 16` / `--outro-bars 16` (multiples de 8)
 - `--bpm 126` : autre tempo (étirement rubberband, ±3 BPM max ; `--max-stretch` pour forcer)
 - `--allow-unknown` : autorise les packs à licence inconnue (**usage perso**) · sans ça : packs à licence OK seulement
+- `--index out\make\_cache\index_sas131_v1.json` : refait un morceau avec l'index de l'époque (mêmes samples choisis ; un rescan de la bibliothèque change les classements)
 - Réglages du moteur : `--set duck_db=10` (liste : `mixengine.DEFAULTS`), `--break-depth 13`, `--offbeat-ms 16`
 
 ≈ 4 min par morceau. Résultat dans `out\make\<nom>\` :
@@ -88,11 +99,14 @@ Un kit de construction (boucles d'un pack) + des one-shots de la bibliothèque, 
 - `qa.md` : **PASS / FAIL** + mesures à côté de Groove With It et frink-deeply (la commande sort en erreur si FAIL)
 - `ledger.md` : samples utilisés + licences · `<nom>.strudel.js` : version éditable / live (ne sonne pas comme le master)
 - Aperçu MP3 192 kbps : `out\_previews\make\<nom>.mp3`
-- **Ta note** : `out\make\ratings.csv` (Excel) → colonne `would_play` = `yes` / `no`, + `notes`. C'est ça qui guide la suite.
+- **Ta note** : `out\make\ratings.csv` (s'ouvre dans Excel ; séparateur `;`). Une ligne par morceau, ajoutée toute seule.
+  Remplis `would_play` = `yes` (je le passerais en set) / `no`, et `notes` en clair (« basse trop sage », « break trop long »…).
+  C'est ça qui guide les réglages suivants : sans notes, on ne sait pas ce qui te plaît.
+- Test à l'aveugle : `out\_previews\make\blind_test.mp3` (3 extraits même volume) ; la réponse est dans `out\make\blind_test_key.txt`.
 
 Contrôler un WAV quelconque avec les mêmes mesures : `.\tools\make.bat qa "chemin\morceau.wav" --bpm 124`
 
-## 3 a. (ancien) Générateur Strudel-synthé — `generate.py`
+## 3 a. (ancien — remplacé par `make`) Générateur Strudel-synthé — `generate.py`
 
 > Gardé pour sa grammaire `PLAN` et l'export Strudel, **plus recommandé pour le son** (voir `docs\audit-2026-11.md`).
 
@@ -145,7 +159,12 @@ Générer avec tes packs (seulement les packs dont la licence autorise la sortie
 .\.venv\Scripts\python.exe tools\generate.py --dna gww --name track02 --seed 42 --key 8A --bpm 123 --kit lib --lib-like gww --lib-loops
 ```
 - `--lib-like gww` : pour chaque piste, le sample le plus proche du son de la ref · `--lib-seed 3` : autre tirage
-- `--lib-pack ghosthack` : un seul pack · `--lib-allow-unknown` : + packs à licence inconnue (SAS019, SINEE)
+- `--lib-pack ghosthack` : un seul pack · `--lib-allow-unknown` : + packs à licence inconnue (SAS019, SINEE, Deeper House)
+- **Deeper House** (Cyclick Samples, disque du magazine Future Music n° 271, 2013) : le PDF du pack ne contient **aucune
+  clause de licence** (seulement la description et le matériel) → `unknown`. Si tu retrouves les conditions du CD de
+  Future Music et qu'elles autorisent la publication : `sampleindex.py roots` / `licence_override` dans `tools\library_roots.json`.
+- Instruments multi-échantillonnés (un fichier par note, ex. `DH_Fadapad-A2.wav`) : `.\.venv\Scripts\python.exe tools\sampleindex.py instruments --pack Deeper`
+- Ré-analyser un seul pack après une correction : `.\.venv\Scripts\python.exe tools\sampleindex.py scan --pack "Deeper House"`
 - `--lib-hook` : hook joué par un one-shot synthé · `--lib-loops` : boucle top/perc si BPM à ±2
 - Dans Strudel : `serve_samples.py` sert aussi les packs (lecture seule) → noms `lib_kick:0…`, `lib_clap:…` (licence OK) et `libx_…` (perso / inconnue)
 

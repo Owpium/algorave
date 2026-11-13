@@ -350,24 +350,30 @@ def select_oneshots(idx, rng, key_pc, allow_unknown=False, prefer_pack=None, onl
     sel = {}
     tg = kick_targets(key_pc)
     kc = []
-    for s in cat("kick"):
-        d, p = s["desc"], s.get("pct", {})
-        f0 = s.get("kick_f0_hz")
-        if not f0 or s["duration"] < 0.25 or d.get("lf", 0) < 0.6:
-            continue
-        if not (90 <= d["decay_ms"] <= 260) and not only_pack:
-            continue
-        shift = min(abs(12 * math.log2(t / f0)) + (0 if tonic else 0.7) for t, tonic in tg) if tg else 0
-        if shift > 3.2:
-            continue
-        kc.append((0.5 * p.get("punch", .5) + 0.3 * (1 - shift / 3.2) + 0.2 * s.get("score", .5) + bonus(s)
-                   + 0.15 * min(1.0, d.get("sub", 0) / 0.5), s))
+    # kicks du pack accordables à ±3,2 demi-tons ; sinon (pack seul) jusqu'à ±6 ; sinon la bibliothèque
+    for pool, lim in ((cat("kick"), 3.2), (cat("kick") if own else [], 6.0), ([s for s in S if s["cat"] == "kick"], 3.2)):
+        for s in pool:
+            d, p = s["desc"], s.get("pct", {})
+            f0 = s.get("kick_f0_hz")
+            if not f0 or s["duration"] < 0.25 or d.get("lf", 0) < 0.6:
+                continue
+            if not (90 <= d["decay_ms"] <= 260) and not only_pack:
+                continue
+            shift = min(abs(12 * math.log2(t / f0)) + (0 if tonic else 0.7) for t, tonic in tg) if tg else 0
+            if shift > lim:
+                continue
+            kc.append((0.5 * p.get("punch", .5) + 0.3 * (1 - min(1.0, shift / 3.2)) + 0.2 * s.get("score", .5) + bonus(s)
+                       + 0.15 * min(1.0, d.get("sub", 0) / 0.5), s))
+        if kc:
+            break
     sel["kick"] = _pick(kc, rng, 5)
     sel["clap"] = _pick([(0.4 * s.get("score", .5) + 0.3 * s.get("pct", {}).get("punch", .5)
                           + 0.3 * (1 - abs(s.get("pct", {}).get("decay", .5) - 0.45) * 2) + bonus(s), s)
                          for s in cat("clap") if 0.2 <= s["duration"] <= 2.0], rng, 6)
     hats = [(0.4 * s.get("score", .5) + 0.35 * (1 - s.get("pct", {}).get("decay", .5))
-             + 0.25 * s.get("pct", {}).get("bright", .5) + bonus(s), s) for s in cat("hat_closed") if s["duration"] <= 1.0]
+             + 0.25 * s.get("pct", {}).get("bright", .5) + bonus(s), s) for s in cat("hat_closed")
+            if s["duration"] <= 1.0 or (only_pack and s.get("pack_id") == only_pack
+                                        and s["desc"].get("decay_ms", 1e9) <= 250)]   # hits du pack suivis de silence
     sel["hat"] = _pick(hats, rng, 8)
     sel["hat2"] = _pick([h for h in hats if h[1] is not sel["hat"]], rng, 8)
     sel["ohat"] = _pick([(s.get("score", .5) + (0.3 if 0.3 <= s["duration"] <= 1.2 else 0), s) for s in cat("hat_open")], rng, 4)
@@ -933,6 +939,8 @@ def build(a, idx, kit, kit_an, seed, name):
     def lane(name_, bus, x, level=None, peak=False, **kw):
         if x is None or not np.any(x):
             return
+        if inst and bus == "drums" and name_ != "clap" and not kw.get("lpf"):
+            kw["lpf"] = 8500.0                 # deep house : charleys / tops plus sombres (air des refs ≈ -24 dB)
         if level is not None:
             cur = 20 * math.log10(np.abs(x).max() + 1e-12) if peak else active_rms_db(x)
             kw["gain_db"] = level - cur + kw.get("gain_db", 0.0)
@@ -1672,6 +1680,7 @@ def main():
                     help="mode instruments : accords 7e / 9e, basse et arpège joués avec les instruments multi-échantillonnés de ce "
                          "pack (+ ses hits et ses boucles de tops) ; --key = tonalité libre (défaut Am), --bpm libre (défaut 122)")
     ap.add_argument("--swing-ms", type=float, default=None, help="retard des 16es impaires (défaut 0 ; 12 en mode instruments)")
+    ap.add_argument("--index", default=None, help="autre fichier d'index (instantané) : mêmes choix de samples qu'à l'époque")
     ap.add_argument("--no-mp3", action="store_true")
     ap.add_argument("--no-stems", action="store_true")
     ap.add_argument("--list-kits", action="store_true")
@@ -1681,11 +1690,13 @@ def main():
     for v in (a.intro_bars, a.outro_bars):
         if v % 8 or v < 8:
             sys.exit("--intro-bars / --outro-bars : multiples de 8")
+    if a.index:                                 # instantané de l'index : refaire un morceau à l'identique
+        si.INDEX = Path(a.index).resolve()
     idx = si.load_index()
     if a.swing_ms is None:
         a.swing_ms = 12.0 if a.instruments else 0.0
     if a.instruments:
-        a.engine = {**{"hall_db": -5.5, "plate_db": -6.0, "duck_db": 10.0}, **a.engine}
+        a.engine = {**{"hall_db": -5.5, "plate_db": -6.0, "duck_db": 10.0, "tp_relimit": True}, **a.engine}
         all_ok = True
         for i in range(a.n):
             seed = a.seed + i
