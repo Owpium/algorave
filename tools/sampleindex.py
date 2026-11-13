@@ -1221,6 +1221,69 @@ def cmd_roots(a):
 
 
 # ---------------------------------------------------------------- ledger (licences of a generated track)
+# ---------------------------------------------------------------- multi-sampled instruments
+INST_RX = re.compile(r"^(?P<stem>.+?)[-_ ](?P<note>[A-G])(?P<acc>#|b)?(?P<oct>-?\d)$")
+
+
+def find_instruments(idx, pack=None, licence="any", min_notes=5):
+    """instrument multi-échantillonné = au moins `min_notes` one-shots d'un même dossier dont le nom ne diffère que par
+    la note finale (« DH_Fadapad-A2 », « Rhodes_F#3 »…). La note vient du NOM (convention C3 = 48, A4 = 440 Hz = 69),
+    contrôlée par la hauteur mesurée (`root_midi`, pyin) quand elle existe : `octave_shift` = décalage médian d'octave.
+    -> liste de {id, pack, pack_id, folder, name, cat, licence, notes: {midi: entrée de l'index}, checked, octave_shift}."""
+    groups = {}
+    for s in idx["samples"]:
+        if "error" in s or s.get("kind") != "oneshot":
+            continue
+        if pack and pack.lower() not in (s["pack"] + " " + s.get("pack_id", "")).lower():
+            continue
+        if licence == "ok" and s.get("licence") != "ok":
+            continue
+        if licence == "known" and s.get("licence") == "personal_only":
+            continue
+        pth = Path(s["path"])
+        m = INST_RX.match(pth.stem)
+        if not m:
+            continue
+        pc = PC[m.group("note").lower()] + (1 if m.group("acc") == "#" else -1 if m.group("acc") == "b" else 0)
+        midi = 12 * (int(m.group("oct")) + 1) + pc
+        groups.setdefault((s["pack"], str(pth.parent).replace("\\", "/"), m.group("stem")), {})[midi] = s
+    out = []
+    for (pk, folder, stem), notes in sorted(groups.items()):
+        if len(notes) < min_notes:
+            continue
+        ss = list(notes.values())
+        cats = [x["cat"] for x in ss]
+        diffs = [x["root_midi"] - k for k, x in notes.items() if x.get("root_midi") is not None and (x.get("pitch_conf") or 0) > .3]
+        pcs_ok = sum(1 for d in diffs if d % 12 == 0)
+        shift = int(round(float(np.median([d for d in diffs if d % 12 == 0]) / 12))) if pcs_ok else 0
+        name = re.sub(r"^[A-Za-z]{1,4}[_-]", "", stem)
+        low = (name + " " + folder).lower()
+        cat = "bass" if "bass" in low or "sub" in low else "pad" if re.search(r"pad|string|atmo", low) else \
+            max(set(cats), key=cats.count)
+        out.append({"id": f"{ss[0].get('pack_id')}:{name}", "pack": pk, "pack_id": ss[0].get("pack_id"), "folder": folder,
+                    "name": name, "cat": cat, "licence": ss[0].get("licence"), "notes": dict(sorted(notes.items())),
+                    "checked": f"{pcs_ok}/{len(diffs)}", "octave_shift": shift})
+    return out
+
+
+def cmd_instruments(a):
+    idx = load_index()
+    ins = find_instruments(idx, a.pack, a.licence)
+    print(f"{len(ins)} instrument(s) multi-échantillonné(s)" + (f" (pack « {a.pack} »)" if a.pack else ""))
+    for i in ins:
+        ks = sorted(i["notes"])
+        steps = sorted({b - a_ for a_, b in zip(ks, ks[1:])})
+        print(f"  {i['id']:28s} {i['cat']:6s} {len(ks):2d} notes {NOTE_NAMES[ks[0] % 12]}{ks[0] // 12 - 1}-"
+              f"{NOTE_NAMES[ks[-1] % 12]}{ks[-1] // 12 - 1} (pas {'/'.join(str(v) for v in steps)} demi-tons)  licence {i['licence']:9s} "
+              f"hauteur vérifiée {i['checked']}" + (f"  octave du nom décalée de {i['octave_shift']:+d}" if i["octave_shift"] else "")
+              + f"  [{i['folder']}]")
+        if a.verbose:
+            for k in ks:
+                x = i["notes"][k]
+                print(f"      {NOTE_NAMES[k % 12]}{k // 12 - 1:<2d} cat {x['cat']:10s} mesuré {x.get('root') or '-':4s} "
+                      f"conf {x.get('pitch_conf')}  {x.get('strudel') or '-'}")
+
+
 LIB_NAME_RX = re.compile(r"\b(libx?_[a-z]+)(?::(\d+))?\b")
 
 
@@ -1342,6 +1405,10 @@ def main():
     p.add_argument("path", nargs="?", help="add: folder path ; enable/disable: root name")
     p.add_argument("--name", help="add: root name (default: from the folder name)")
     p.add_argument("--licence", choices=["ok", "personal", "unknown"], help="add: force the licence of every pack of the root")
+    p = sp.add_parser("instruments", help="multi-sampled instruments (one file per note) found in the index")
+    p.add_argument("--pack", help="substring of the pack folder / id")
+    p.add_argument("--licence", default="any", choices=["any", "ok", "known"])
+    p.add_argument("-v", "--verbose", action="store_true")
     p = sp.add_parser("ledger", help="licences / credits of the library samples used by a generated track")
     p.add_argument("folder", help="out\\gen\\<track> (or just <track>)")
     p.add_argument("--write", action="store_true", help="also write <folder>/LICENCES.md")
@@ -1349,7 +1416,7 @@ def main():
     if a.cmd == "roots" and a.action != "list" and not a.path:
         ap.error(f"roots {a.action} needs a path / name")
     {"scan": cmd_scan, "stats": cmd_stats, "query": cmd_query, "similar": cmd_similar, "roots": cmd_roots,
-     "ledger": cmd_ledger}[a.cmd](a)
+     "ledger": cmd_ledger, "instruments": cmd_instruments}[a.cmd](a)
 
 
 if __name__ == "__main__":

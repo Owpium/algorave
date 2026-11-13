@@ -1,0 +1,300 @@
+{
+ "name": "mk-fsm-s1",
+ "seed": 1,
+ "bpm": 124.0,
+ "key": "F# minor",
+ "camelot": "11A",
+ "kit": "sas131:SAS Kit Construction 03",
+ "ref": "groove_with_it_wav_full",
+ "harmony": null,
+ "bars": 176,
+ "plan": [
+  {
+   "type": "intro",
+   "bars": 16,
+   "start": 0
+  },
+  {
+   "type": "groove",
+   "ref_bars": 44,
+   "noclap": true,
+   "bars": 32,
+   "start": 16,
+   "gi": 0,
+   "after_drop": false
+  },
+  {
+   "type": "break",
+   "ref_bars": 4,
+   "noclap": false,
+   "bars": 8,
+   "start": 48,
+   "break_depth_before_db": 10.1,
+   "extra_cut_db": 2.9
+  },
+  {
+   "type": "groove",
+   "ref_bars": 32,
+   "noclap": false,
+   "bars": 16,
+   "start": 56,
+   "gi": 1,
+   "after_drop": false
+  },
+  {
+   "type": "bigbreak",
+   "ref_bars": 8,
+   "noclap": false,
+   "bars": 16,
+   "start": 72,
+   "break_depth_before_db": 9.4,
+   "extra_cut_db": 3.6
+  },
+  {
+   "type": "drop",
+   "ref_bars": 36,
+   "noclap": false,
+   "bars": 32,
+   "start": 88,
+   "gi": 2
+  },
+  {
+   "type": "break",
+   "ref_bars": 4,
+   "noclap": false,
+   "bars": 8,
+   "start": 120,
+   "break_depth_before_db": 10.2,
+   "extra_cut_db": 2.8
+  },
+  {
+   "type": "groove",
+   "ref_bars": 70,
+   "noclap": false,
+   "bars": 32,
+   "start": 128,
+   "gi": 3,
+   "after_drop": true
+  },
+  {
+   "type": "outro",
+   "bars": 16,
+   "start": 160
+  }
+ ],
+ "offbeat_delay_ms": 16.0,
+ "kick_f0_hz": 49.7955322265625,
+ "kick_tune_semitones": -1.28,
+ "patterns": {
+  "perc": [
+   6,
+   7,
+   14
+  ],
+  "perc2": [
+   1,
+   5
+  ],
+  "ghost": [
+   5,
+   7
+  ]
+ },
+ "lane_gain_db": {
+  "kick": -6.0,
+  "clap": -14.5,
+  "hat": -26.2,
+  "hat2": -20.0,
+  "ohat": -22.0,
+  "roll": -16.6,
+  "topA": 6.3,
+  "topB": -3.9,
+  "topC": 13.0,
+  "bass": -1.2,
+  "hook": -0.9,
+  "second": 3.8,
+  "third": -1.7,
+  "pad": 15.0,
+  "kitfx": 4.0,
+  "riser": 14.8,
+  "swell": -19.0,
+  "impact": -11.0
+ },
+ "balance": {
+  "side_db": 0.0,
+  "width_before_db": -7.7,
+  "width_after_db": -7.7,
+  "kick_punch_db": 1.5,
+  "kick_sub_db": -1.5,
+  "bass_db": 0.0,
+  "eq_db": [
+   0.3,
+   -2.1,
+   -2.3,
+   2.5,
+   -3.7,
+   1.3
+  ],
+  "steps": [
+   [
+    15.3,
+    -4.5
+   ],
+   [
+    16.6,
+    -4.4
+   ],
+   [
+    16.2,
+    -5.2
+   ]
+  ],
+  "window_s": [
+   170.0,
+   230.0
+  ]
+ },
+ "mix": {
+  "duck_p95_db": 9.0,
+  "returns_rms_db": -37.1,
+  "drum_glue_gr_db": 1.64,
+  "music_glue_gr_db": 2.75
+ },
+ "master": {
+  "premaster_lufs": -19.39,
+  "glue_gr_db": 1.38,
+  "target_lufs": -12.0,
+  "lufs": -12.42,
+  "true_peak_db": -1.02,
+  "gain_db": 7.96,
+  "limiter_p99_5_db": 1.2,
+  "limiter_active_pct": 52.0,
+  "crest_db": 10.04
+ },
+ "engine": {
+  "duck_db": 9.0,
+  "duck_thr_db": -34.0,
+  "duck_range_db": 16.0,
+  "duck_att_ms": 2.0,
+  "duck_hold_ms": 45.0,
+  "duck_rel_ms": 150.0,
+  "return_duck": 0.8,
+  "room_db": -9.0,
+  "plate_db": -7.0,
+  "hall_db": -8.0,
+  "delay_db": -9.0,
+  "delay_beats": 0.75,
+  "delay_fb": 0.5,
+  "delay_to_plate": 0.35,
+  "return_width_db": 1.5,
+  "bass_mono_hz": 140.0,
+  "drum_glue_ratio": 2.0,
+  "drum_glue_thr": 5.0,
+  "music_glue_ratio": 1.8,
+  "music_glue_thr": 6.0,
+  "music_width_db": 0.0,
+  "target_lufs": -11.0,
+  "ceiling_db": -1.0,
+  "max_limit_db": 3.0,
+  "min_crest_db": 9.6,
+  "mono_hz": 120.0,
+  "master_glue_ratio": 1.5,
+  "master_glue_thr": 4.0,
+  "clip_thr": 0.82
+ },
+ "lib": {
+  "bass": {
+   "path": "SAS131_Samplesound - Atlant - Melodic Techno/SAS Kit Construction 03/SAS_Bass_124BPM_KeyF#_03.wav",
+   "strudel": "lib_bassloop:31",
+   "licence": "ok",
+   "pack_id": "sas131"
+  },
+  "hook": {
+   "path": "SAS131_Samplesound - Atlant - Melodic Techno/SAS Kit Construction 03/SAS_Lead_124BPM_KeyF#_03.wav",
+   "strudel": "lib_synthloop:76",
+   "licence": "ok",
+   "pack_id": "sas131"
+  },
+  "second": {
+   "path": "SAS131_Samplesound - Atlant - Melodic Techno/SAS Kit Construction 03/SAS_Synth_124BPM_KeyF#_03.wav",
+   "strudel": "lib_synthloop:77",
+   "licence": "ok",
+   "pack_id": "sas131"
+  },
+  "third": {
+   "path": "SAS131_Samplesound - Atlant - Melodic Techno/SAS Kit Construction 03/SAS_Pluck_124BPM_KeyF#_03.wav",
+   "strudel": "lib_synthloop:58",
+   "licence": "ok",
+   "pack_id": "sas131"
+  },
+  "pad": {
+   "path": "SAS131_Samplesound - Atlant - Melodic Techno/SAS Kit Construction 03/SAS_Pad_124BPM_KeyF#_03.wav",
+   "strudel": "lib_padloop:0",
+   "licence": "ok",
+   "pack_id": "sas131"
+  },
+  "topA": {
+   "path": "SAS131_Samplesound - Atlant - Melodic Techno/SAS Kit Construction 03/SAS_Hihats_124BPM_KeyF#_03.wav",
+   "strudel": "lib_toploop:152",
+   "licence": "ok",
+   "pack_id": "sas131"
+  },
+  "topB": {
+   "path": "SAS131_Samplesound - Atlant - Melodic Techno/SAS Kit Construction 03/SAS_Charls_124BPM_KeyF#_03.wav",
+   "strudel": "lib_toploop:151",
+   "licence": "ok",
+   "pack_id": "sas131"
+  },
+  "topC": {
+   "path": "SAS131_Samplesound - Atlant - Melodic Techno/SAS Kit Construction 03/SAS_Shackers_124BPM_KeyF#_03.wav",
+   "strudel": "lib_toploop:153",
+   "licence": "ok",
+   "pack_id": "sas131"
+  },
+  "kitfx": {
+   "path": "SAS131_Samplesound - Atlant - Melodic Techno/SAS Kit Construction 03/SAS_Fx_124BPM_KeyF#_03.wav",
+   "strudel": "lib_fxloop:60",
+   "licence": "ok",
+   "pack_id": "sas131"
+  },
+  "riser": {
+   "path": "SAS131_Samplesound - Atlant - Melodic Techno/SAS Kit Construction 03/SAS_Rise2_124BPM_KeyF#_03.wav",
+   "strudel": "lib_fxloop:61",
+   "licence": "ok",
+   "pack_id": "sas131"
+  },
+  "kick": {
+   "path": "SAS023_Samplesound_Techno_Volume_4/SS_TCN_One_Shot/SS_TCN_Kick_Solo/SS_TCN_#4_Kick_Solo_26.wav",
+   "strudel": "lib_kick:6",
+   "licence": "ok",
+   "pack_id": "sas023"
+  },
+  "clap": {
+   "path": "SAS023_Samplesound_Techno_Volume_4/SS_TCN_One_Shot/SS_TCN_Clap_Snare/SS_TCN_#4_Clap_Snare_03.wav",
+   "strudel": "lib_clap:2",
+   "licence": "ok",
+   "pack_id": "sas023"
+  },
+  "hat": {
+   "path": "Ghosthack - AC2025 - Day 1 - Warehouse Techno Sounds 2026/One-Shots/Hat/Ghosthack-AC25_Hat_019.wav",
+   "strudel": "lib_hh:16",
+   "licence": "ok",
+   "pack_id": "ghosthack"
+  },
+  "hat2": {
+   "path": "Ghosthack - AC2025 - Day 1 - Warehouse Techno Sounds 2026/One-Shots/Hat/Ghosthack-AC25_Hat_001.wav",
+   "strudel": "lib_hh:8",
+   "licence": "ok",
+   "pack_id": "ghosthack"
+  },
+  "ohat": {
+   "path": "SAS023_Samplesound_Techno_Volume_4/SS_TCN_One_Shot/SS_TCN__HH/SS_TCN_#4_HH_01.wav",
+   "strudel": "lib_oh:1",
+   "licence": "ok",
+   "pack_id": "sas023"
+  }
+ },
+ "qa_ok": true,
+ "master_wav": "mk-fsm-s1 - 124bpm - 11A.wav",
+ "preview": "out\\_previews\\make\\mk-fsm-s1.mp3"
+}

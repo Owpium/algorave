@@ -1,0 +1,250 @@
+{
+ "ok": true,
+ "measures": {
+  "window_s": [
+   170.0,
+   230.0
+  ],
+  "lr_corr": 0.962,
+  "crest": 10.039,
+  "sub_20_60": -5.3,
+  "lowmid_150_400": -10.158,
+  "air_10k": -23.661,
+  "width_sub": -52.964,
+  "width_150_400": -13.884,
+  "width_1k_4k": -7.537,
+  "width_4k_10k": -9.402,
+  "kick_transient": 14.607,
+  "events": 495.0,
+  "timbre_move": 0.798,
+  "chroma_move": 0.034,
+  "contrast": 12.686,
+  "break_drop": 11.841,
+  "lufs": -12.418,
+  "true_peak": -1.02,
+  "duration_s": 344.516
+ },
+ "rows": [
+  {
+   "key": "lr_corr",
+   "label": "Corr\u00e9lation G/D",
+   "value": 0.962,
+   "min": null,
+   "max": 0.97,
+   "unit": "",
+   "ok": true,
+   "refs": {
+    "Groove With It": 0.98,
+    "frink-deeply": 0.961
+   }
+  },
+  {
+   "key": "width_1k_4k",
+   "label": "Largeur 1-4 kHz (c\u00f4t\u00e9s/centre)",
+   "value": -7.537,
+   "min": -12.0,
+   "max": -5.0,
+   "unit": "dB",
+   "ok": true,
+   "refs": {
+    "Groove With It": -8.107,
+    "frink-deeply": -14.003
+   }
+  },
+  {
+   "key": "width_sub",
+   "label": "Sub mono : largeur 20-120 Hz",
+   "value": -52.964,
+   "min": null,
+   "max": -25.0,
+   "unit": "dB",
+   "ok": true,
+   "refs": {
+    "Groove With It": -27.586,
+    "frink-deeply": -44.534
+   }
+  },
+  {
+   "key": "crest",
+   "label": "Cr\u00eate / RMS",
+   "value": 10.039,
+   "min": 9.0,
+   "max": null,
+   "unit": "dB",
+   "ok": true,
+   "refs": {
+    "Groove With It": 10.315,
+    "frink-deeply": 13.265
+   }
+  },
+  {
+   "key": "contrast",
+   "label": "\u00c9cart de niveau entre mesures (P95-P5)",
+   "value": 12.686,
+   "min": 9.0,
+   "max": null,
+   "unit": "dB",
+   "ok": true,
+   "refs": {
+    "Groove With It": 12.662,
+    "frink-deeply": 8.84
+   }
+  },
+  {
+   "key": "sub_20_60",
+   "label": "Sub 20-60 Hz / total",
+   "value": -5.3,
+   "min": -8.0,
+   "max": -4.0,
+   "unit": "dB",
+   "ok": true,
+   "refs": {
+    "Groove With It": -7.589,
+    "frink-deeply": -7.863
+   }
+  },
+  {
+   "key": "kick_transient",
+   "label": "Transitoire du kick 60-150 Hz",
+   "value": 14.607,
+   "min": 13.059,
+   "max": null,
+   "unit": "dB",
+   "ok": true,
+   "refs": {
+    "Groove With It": 15.363,
+    "frink-deeply": 27.691
+   }
+  },
+  {
+   "key": "events",
+   "label": "\u00c9v\u00e9nements 500 Hz-9 kHz / 60 s",
+   "value": 495.0,
+   "min": 230.25,
+   "max": null,
+   "unit": "",
+   "ok": true,
+   "refs": {
+    "Groove With It": 339.0,
+    "frink-deeply": 307.0
+   }
+  },
+  {
+   "key": "timbre_move",
+   "label": "Changement de timbre mesure \u00e0 mesure",
+   "value": 0.798,
+   "min": 0.714,
+   "max": null,
+   "unit": "dB mel",
+   "ok": true,
+   "refs": {
+    "Groove With It": 0.952,
+    "frink-deeply": 1.02
+   }
+  },
+  {
+   "key": "lufs",
+   "label": "Loudness int\u00e9gr\u00e9",
+   "value": -12.418,
+   "min": -12.5,
+   "max": -9.5,
+   "unit": "LUFS",
+   "ok": true,
+   "refs": {
+    "Groove With It": -11.767,
+    "frink-deeply": -12.499
+   }
+  },
+  {
+   "key": "true_peak",
+   "label": "True peak",
+   "value": -1.02,
+   "min": null,
+   "max": -0.9,
+   "unit": "dBFS",
+   "ok": true,
+   "refs": {
+    "Groove With It": -0.843,
+    "frink-deeply": 1.38
+   }
+  },
+  {
+   "key": "width_150_400",
+   "label": "Largeur 150-400 Hz",
+   "value": -13.884,
+   "min": null,
+   "max": null,
+   "unit": "dB",
+   "ok": null,
+   "refs": {
+    "Groove With It": -16.997,
+    "frink-deeply": -9.575
+   }
+  },
+  {
+   "key": "width_4k_10k",
+   "label": "Largeur 4-10 kHz",
+   "value": -9.402,
+   "min": null,
+   "max": null,
+   "unit": "dB",
+   "ok": null,
+   "refs": {
+    "Groove With It": -9.594,
+    "frink-deeply": -12.975
+   }
+  },
+  {
+   "key": "lowmid_150_400",
+   "label": "Bas-m\u00e9dium 150-400 Hz / total",
+   "value": -10.158,
+   "min": null,
+   "max": null,
+   "unit": "dB",
+   "ok": null,
+   "refs": {
+    "Groove With It": -11.069,
+    "frink-deeply": -8.483
+   }
+  },
+  {
+   "key": "air_10k",
+   "label": "Air > 10 kHz / total",
+   "value": -23.661,
+   "min": null,
+   "max": null,
+   "unit": "dB",
+   "ok": null,
+   "refs": {
+    "Groove With It": -24.293,
+    "frink-deeply": -25.374
+   }
+  },
+  {
+   "key": "chroma_move",
+   "label": "Mouvement harmonique (chroma)",
+   "value": 0.034,
+   "min": null,
+   "max": null,
+   "unit": "",
+   "ok": null,
+   "refs": {
+    "Groove With It": 0.004,
+    "frink-deeply": 0.006
+   }
+  },
+  {
+   "key": "break_drop",
+   "label": "\u00c9cart de niveau P90-P10",
+   "value": 11.841,
+   "min": null,
+   "max": null,
+   "unit": "dB",
+   "ok": null,
+   "refs": {
+    "Groove With It": 8.984,
+    "frink-deeply": 8.425
+   }
+  }
+ ]
+}

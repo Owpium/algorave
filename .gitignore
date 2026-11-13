@@ -34,3 +34,6 @@ out/**/samples/
 
 # --- t2s : cache local des étapes
 out/**/_t2s_cache.json
+
+# --- make : caches / logs locaux
+out/make/_cache/

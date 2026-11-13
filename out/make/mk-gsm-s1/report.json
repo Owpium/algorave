@@ -1,0 +1,287 @@
+{
+ "name": "mk-gsm-s1",
+ "seed": 1,
+ "bpm": 124.0,
+ "key": "G# minor",
+ "camelot": "1A",
+ "kit": "sas131:SAS Kit Construction 04",
+ "ref": "groove_with_it_wav_full",
+ "harmony": null,
+ "bars": 176,
+ "plan": [
+  {
+   "type": "intro",
+   "bars": 16,
+   "start": 0
+  },
+  {
+   "type": "groove",
+   "ref_bars": 44,
+   "noclap": true,
+   "bars": 32,
+   "start": 16,
+   "gi": 0,
+   "after_drop": false
+  },
+  {
+   "type": "break",
+   "ref_bars": 4,
+   "noclap": false,
+   "bars": 8,
+   "start": 48,
+   "break_depth_before_db": 14.0,
+   "extra_cut_db": 0.0
+  },
+  {
+   "type": "groove",
+   "ref_bars": 32,
+   "noclap": false,
+   "bars": 16,
+   "start": 56,
+   "gi": 1,
+   "after_drop": false
+  },
+  {
+   "type": "bigbreak",
+   "ref_bars": 8,
+   "noclap": false,
+   "bars": 16,
+   "start": 72,
+   "break_depth_before_db": 10.0,
+   "extra_cut_db": 3.0
+  },
+  {
+   "type": "drop",
+   "ref_bars": 36,
+   "noclap": false,
+   "bars": 32,
+   "start": 88,
+   "gi": 2
+  },
+  {
+   "type": "break",
+   "ref_bars": 4,
+   "noclap": false,
+   "bars": 8,
+   "start": 120,
+   "break_depth_before_db": 13.8,
+   "extra_cut_db": 0.0
+  },
+  {
+   "type": "groove",
+   "ref_bars": 70,
+   "noclap": false,
+   "bars": 32,
+   "start": 128,
+   "gi": 3,
+   "after_drop": true
+  },
+  {
+   "type": "outro",
+   "bars": 16,
+   "start": 160
+  }
+ ],
+ "offbeat_delay_ms": 16.0,
+ "kick_f0_hz": 50.46844482421875,
+ "kick_tune_semitones": 0.49,
+ "patterns": {
+  "perc": [
+   6,
+   7,
+   14
+  ],
+  "perc2": [
+   1,
+   5
+  ],
+  "ghost": [
+   5,
+   7
+  ]
+ },
+ "lane_gain_db": {
+  "kick": -6.0,
+  "clap": -14.5,
+  "hat": -26.2,
+  "hat2": -20.0,
+  "ohat": -22.0,
+  "roll": -16.6,
+  "topA": -1.5,
+  "topB": 4.1,
+  "topC": 10.3,
+  "bass": 5.5,
+  "hook": 2.0,
+  "pad": 5.8,
+  "kitfx": 2.9,
+  "swell": -19.0,
+  "impact": -11.0
+ },
+ "balance": {
+  "side_db": -2.7,
+  "width_before_db": -5.6,
+  "width_after_db": -7.6,
+  "kick_punch_db": 3.0,
+  "kick_sub_db": 3.0,
+  "bass_db": 0.0,
+  "eq_db": [
+   -1.1,
+   2.4,
+   0.7,
+   1.8,
+   -1.4,
+   3.6
+  ],
+  "steps": [
+   [
+    14.0,
+    -8.3
+   ],
+   [
+    15.2,
+    -8.2
+   ],
+   [
+    16.4,
+    -8.1
+   ],
+   [
+    16.7,
+    -7.3
+   ],
+   [
+    17.1,
+    -6.6
+   ]
+  ],
+  "window_s": [
+   170.0,
+   230.0
+  ]
+ },
+ "mix": {
+  "duck_p95_db": 9.0,
+  "returns_rms_db": -39.6,
+  "drum_glue_gr_db": 1.71,
+  "music_glue_gr_db": 2.54
+ },
+ "master": {
+  "premaster_lufs": -18.79,
+  "glue_gr_db": 1.23,
+  "target_lufs": -11.5,
+  "lufs": -12.09,
+  "true_peak_db": -1.02,
+  "gain_db": 7.9,
+  "limiter_p99_5_db": 1.21,
+  "limiter_active_pct": 44.5,
+  "crest_db": 9.93
+ },
+ "engine": {
+  "duck_db": 9.0,
+  "duck_thr_db": -34.0,
+  "duck_range_db": 16.0,
+  "duck_att_ms": 2.0,
+  "duck_hold_ms": 45.0,
+  "duck_rel_ms": 150.0,
+  "return_duck": 0.8,
+  "room_db": -9.0,
+  "plate_db": -7.0,
+  "hall_db": -8.0,
+  "delay_db": -9.0,
+  "delay_beats": 0.75,
+  "delay_fb": 0.5,
+  "delay_to_plate": 0.35,
+  "return_width_db": 1.5,
+  "bass_mono_hz": 140.0,
+  "drum_glue_ratio": 2.0,
+  "drum_glue_thr": 5.0,
+  "music_glue_ratio": 1.8,
+  "music_glue_thr": 6.0,
+  "music_width_db": 0.0,
+  "target_lufs": -11.0,
+  "ceiling_db": -1.0,
+  "max_limit_db": 3.0,
+  "min_crest_db": 9.6,
+  "mono_hz": 120.0,
+  "master_glue_ratio": 1.5,
+  "master_glue_thr": 4.0,
+  "clip_thr": 0.82
+ },
+ "lib": {
+  "bass": {
+   "path": "SAS131_Samplesound - Atlant - Melodic Techno/SAS Kit Construction 04/SAS_Bass_124BPM_KeyG#_04.wav",
+   "strudel": "lib_bassloop:32",
+   "licence": "ok",
+   "pack_id": "sas131"
+  },
+  "hook": {
+   "path": "SAS131_Samplesound - Atlant - Melodic Techno/SAS Kit Construction 04/SAS_Lead_124BPM_KeyG#_04.wav",
+   "strudel": "lib_synthloop:59",
+   "licence": "ok",
+   "pack_id": "sas131"
+  },
+  "pad": {
+   "path": "SAS131_Samplesound - Atlant - Melodic Techno/SAS Kit Construction 04/SAS_Pad_124BPM_KeyG#_04.wav",
+   "strudel": "lib_padloop:1",
+   "licence": "ok",
+   "pack_id": "sas131"
+  },
+  "topA": {
+   "path": "SAS131_Samplesound - Atlant - Melodic Techno/SAS Kit Construction 04/SAS_Hihats_124BPM_KeyG#_04.wav",
+   "strudel": "lib_toploop:156",
+   "licence": "ok",
+   "pack_id": "sas131"
+  },
+  "topB": {
+   "path": "SAS131_Samplesound - Atlant - Melodic Techno/SAS Kit Construction 04/SAS_Cabasa_124BPM_KeyG#_04.wav",
+   "strudel": "lib_toploop:154",
+   "licence": "ok",
+   "pack_id": "sas131"
+  },
+  "topC": {
+   "path": "SAS131_Samplesound - Atlant - Melodic Techno/SAS Kit Construction 04/SAS_Shacker_124BPM_KeyG#_04.wav",
+   "strudel": "lib_toploop:159",
+   "licence": "ok",
+   "pack_id": "sas131"
+  },
+  "kitfx": {
+   "path": "SAS131_Samplesound - Atlant - Melodic Techno/SAS Kit Construction 04/SAS_Fx_124BPM_KeyG#_04.wav",
+   "strudel": "lib_fxloop:63",
+   "licence": "ok",
+   "pack_id": "sas131"
+  },
+  "kick": {
+   "path": "SAS023_Samplesound_Techno_Volume_4/SS_TCN_One_Shot/SS_TCN_Kick_Solo/SS_TCN_#4_Kick_Solo_27.wav",
+   "strudel": "lib_kick:3",
+   "licence": "ok",
+   "pack_id": "sas023"
+  },
+  "clap": {
+   "path": "SAS023_Samplesound_Techno_Volume_4/SS_TCN_One_Shot/SS_TCN_Clap_Snare/SS_TCN_#4_Clap_Snare_03.wav",
+   "strudel": "lib_clap:2",
+   "licence": "ok",
+   "pack_id": "sas023"
+  },
+  "hat": {
+   "path": "Ghosthack - AC2025 - Day 1 - Warehouse Techno Sounds 2026/One-Shots/Hat/Ghosthack-AC25_Hat_019.wav",
+   "strudel": "lib_hh:16",
+   "licence": "ok",
+   "pack_id": "ghosthack"
+  },
+  "hat2": {
+   "path": "Ghosthack - AC2025 - Day 1 - Warehouse Techno Sounds 2026/One-Shots/Hat/Ghosthack-AC25_Hat_001.wav",
+   "strudel": "lib_hh:8",
+   "licence": "ok",
+   "pack_id": "ghosthack"
+  },
+  "ohat": {
+   "path": "SAS023_Samplesound_Techno_Volume_4/SS_TCN_One_Shot/SS_TCN__HH/SS_TCN_#4_HH_01.wav",
+   "strudel": "lib_oh:1",
+   "licence": "ok",
+   "pack_id": "sas023"
+  }
+ },
+ "qa_ok": false,
+ "master_wav": "mk-gsm-s1 - 124bpm - 1A.wav",
+ "preview": "out\\_previews\\make\\mk-gsm-s1.mp3"
+}

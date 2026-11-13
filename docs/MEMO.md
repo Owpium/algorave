@@ -68,7 +68,33 @@ Résultats dans `out\_batch\<nom du dossier>\` :
 2. Ouvre **strudel.cc**, colle `out\mon_morceau\mon_morceau.samples.strudel.js`
 3. **Ctrl+Entrée** = play, **Ctrl+.** = stop. Accepte l'accès « réseau local » si demandé.
 
-## 3. Créer un nouveau morceau
+## 3. Créer un morceau (make) — voie recommandée
+
+Un kit de construction (boucles d'un pack) + des one-shots de la bibliothèque, arrangés comme une référence et
+**mixés par un moteur audio Python** (sidechain réel, reverbs, largeur stéréo, mastering doux ≈ −11 LUFS). Aucun LLM.
+```powershell
+.\tools\make.bat --kit sas131 --key F# --seed 1
+```
+- `--key` : tonalité du kit (`.\tools\make.bat --list-kits` pour voir les kits, leur tonalité **mesurée** et leur tempo)
+- `--seed` : change le nombre = autres one-shots, autre découpage des boucles · `--n 3` : 3 variantes d'un coup
+- `--ref groove_with_it_wav_full` : la référence dont on reprend la **structure** et les placements de batterie (jamais les notes)
+- `--length-min 5.6` · `--intro-bars 16` / `--outro-bars 16` (multiples de 8)
+- `--bpm 126` : autre tempo (étirement rubberband, ±3 BPM max ; `--max-stretch` pour forcer)
+- `--allow-unknown` : autorise les packs à licence inconnue (**usage perso**) · sans ça : packs à licence OK seulement
+- Réglages du moteur : `--set duck_db=10` (liste : `mixengine.DEFAULTS`), `--break-depth 13`, `--offbeat-ms 16`
+
+≈ 4 min par morceau. Résultat dans `out\make\<nom>\` :
+- **`<nom> - 124bpm - 11A.wav`** = le master (BPM + Camelot dans le nom) · `(premaster).wav` · `stems\` (drums / bass / music / fx)
+- `qa.md` : **PASS / FAIL** + mesures à côté de Groove With It et frink-deeply (la commande sort en erreur si FAIL)
+- `ledger.md` : samples utilisés + licences · `<nom>.strudel.js` : version éditable / live (ne sonne pas comme le master)
+- Aperçu MP3 192 kbps : `out\_previews\make\<nom>.mp3`
+- **Ta note** : `out\make\ratings.csv` (Excel) → colonne `would_play` = `yes` / `no`, + `notes`. C'est ça qui guide la suite.
+
+Contrôler un WAV quelconque avec les mêmes mesures : `.\tools\make.bat qa "chemin\morceau.wav" --bpm 124`
+
+## 3 a. (ancien) Générateur Strudel-synthé — `generate.py`
+
+> Gardé pour sa grammaire `PLAN` et l'export Strudel, **plus recommandé pour le son** (voir `docs\audit-2026-11.md`).
 
 **a) Extraire l'ADN d'un style** (il faut l'analyse du morceau entier, faite avec `--full`) :
 ```powershell
@@ -189,3 +215,7 @@ Après une modif des outils :
 ```
 - Strudel ne charge pas les sons : vérifie que `serve_samples.py` tourne
 - Une option ne marche pas : `--help` sur le script
+- Tonalité d'un morceau traduit **peu fiable quand `key_corr` < 0,6** (dans `analysis.json`). Cas connu (lot 1) :
+  « Will I Am vs Buja (Scar Edit) » = Fa mineur sur l'extrait de 60 s (corrélation 0,39, c'est ce que montre
+  `summary.csv`) mais Sol mineur sur le morceau entier (0,51). Les deux sont des estimations faibles : ne pas s'y
+  fier pour un mix harmonique ; pipeline non modifié (noté dans `docs\audit-2026-11.md` § 7).
